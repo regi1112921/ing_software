@@ -1,0 +1,120 @@
+# Levanta todo el sistema en local:  docker compose up --build
+#   App:   http://localhost:8080
+#   BD:    localhost:5433 (usuario, contraseña y base: huellas)
+# Guía completa: GUIA_EJECUCION.md
+
+# Configuración común de los cuatro servicios del backend (misma imagen).
+x-servicio-backend: &servicio-backend
+  image: huellas-backend
+  restart: unless-stopped
+  depends_on:
+    db:
+      condition: service_healthy
+
+x-entorno-backend: &entorno-backend
+  DATABASE_URL: postgres://huellas:huellas@db:5432/huellas
+  DB_SSL: "false"
+  DB_POOL_MAX: "5"
+  AUTENTICACION_URL: http://autenticacion:3004
+  SESION_HORAS: "8"
+  CORS_ORIGENES: "*"
+  TZ: America/La_Paz
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: huellas
+      POSTGRES_PASSWORD: huellas
+      POSTGRES_DB: huellas
+      TZ: America/La_Paz
+      # Contraseña que reciben los usuarios de prueba al crear la base (solo desarrollo).
+      CONTRASENA_DESARROLLO: ${HUELLAS_CONTRASENA_DEV:-huellas123}
+    volumes:
+      - datos-bd:/var/lib/postgresql/data
+      - ./database:/database:ro
+      - ./database/docker/inicializar.sh:/docker-entrypoint-initdb.d/inicializar.sh:ro
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U huellas -d huellas"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  autenticacion:
+    <<: *servicio-backend
+    # Solo este servicio compila la imagen; los otros tres la reutilizan.
+    build: ./backend
+    command: ["node", "services/autenticacion/src/index.js"]
+    environment:
+      <<: *entorno-backend
+      AUTENTICACION_PORT: "3004"
+    ports:
+      - "3004:3004"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3004/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  veterinaria:
+    <<: *servicio-backend
+    pull_policy: never
+    command: ["node", "services/veterinaria/src/index.js"]
+    environment:
+      <<: *entorno-backend
+      VETERINARIA_PORT: "3001"
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  adopcion:
+    <<: *servicio-backend
+    pull_policy: never
+    command: ["node", "services/adopcion/src/index.js"]
+    environment:
+      <<: *entorno-backend
+      ADOPCION_PORT: "3002"
+    ports:
+      - "3002:3002"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3002/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  dashboard:
+    <<: *servicio-backend
+    pull_policy: never
+    command: ["node", "services/dashboard/src/index.js"]
+    environment:
+      <<: *entorno-backend
+      DASHBOARD_PORT: "3003"
+    ports:
+      - "3003:3003"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3003/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build: ./frontend
+    image: huellas-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - autenticacion
+      - veterinaria
+      - adopcion
+      - dashboard
+
+volumes:
+  datos-bd:
