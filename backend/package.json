@@ -1,0 +1,23 @@
+{
+  "name": "huellas-backend",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "services/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n auth,vet,adop,dash -c blue,green,magenta,cyan \"npm run dev -w @huellas/autenticacion\" \"npm run dev -w @huellas/veterinaria\" \"npm run dev -w @huellas/adopcion\" \"npm run dev -w @huellas/dashboard\"",
+    "start": "concurrently -n auth,vet,adop,dash \"npm start -w @huellas/autenticacion\" \"npm start -w @huellas/veterinaria\" \"npm start -w @huellas/adopcion\" \"npm start -w @huellas/dashboard\"",
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
+    "@electric-sql/pglite-socket": "^0.2.14",
+    "concurrently": "^10.0.6",
+    "supertest": "^7.3.1"
+  }
+}

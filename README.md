@@ -1,6 +1,6 @@
 # Sistema de Gestión de Refugio de Animales
 
-Sistema dividido en **tres capas independientes** y **tres servicios**:
+Sistema dividido en **tres capas independientes** y **cuatro servicios**:
 
 | Capa | Carpeta | Tecnología |
 |------|---------|------------|
@@ -10,9 +10,10 @@ Sistema dividido en **tres capas independientes** y **tres servicios**:
 
 | Servicio | Puerto | Responsabilidad |
 |----------|--------|-----------------|
-| Veterinaria | 3001 | Consultas médicas, vacunas y tratamientos |
-| Adopción | 3002 | Animales del refugio, adoptantes y solicitudes de adopción |
+| Veterinaria | 3001 | Historial médico (atenciones) de cada perro |
+| Adopción | 3002 | Perros, catálogos, adoptantes y adopciones |
 | Dashboard | 3003 | Estadísticas e indicadores (solo lectura) |
+| Autenticación | 3004 | Inicio y cierre de sesión |
 
 ## Estructura
 
@@ -26,6 +27,7 @@ Sistema dividido en **tres capas independientes** y **tres servicios**:
 ├── backend/                  CAPA DE LÓGICA
 │   ├── shared/               Código común (conexión a BD, errores)
 │   └── services/
+│       ├── autenticacion/    Servicio de autenticación
 │       ├── veterinaria/      Servicio de veterinaria
 │       ├── adopcion/         Servicio de adopción
 │       └── dashboard/        Servicio de dashboard
@@ -41,7 +43,7 @@ Sistema dividido en **tres capas independientes** y **tres servicios**:
 
 ## Estado del proyecto
 
-El repositorio contiene **solo la estructura de carpetas y la documentación**.
+Estado: la base de datos y el backend están implementados; el frontend todavía es un mockup sin conexión a la API.
 Cada equipo implementa su capa siguiendo la guía de su carpeta:
 
 | Capa | Guía |
