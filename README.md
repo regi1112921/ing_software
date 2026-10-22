@@ -43,7 +43,17 @@ Sistema dividido en **tres capas independientes** y **cuatro servicios**:
 
 ## Estado del proyecto
 
-Estado: la base de datos y el backend están implementados; el frontend todavía es un mockup sin conexión a la API.
+Estado: la base de datos, el backend y el frontend están implementados y conectados.
+
+## Cómo correrlo
+
+```bash
+docker compose up --build
+```
+
+Abre http://localhost:8080 e inicia sesión con `maria.alvarado@peluchin.test` / `huellas123`.
+Guía completa (Docker y modo local): **[GUIA_EJECUCION.md](GUIA_EJECUCION.md)**.
+
 Cada equipo implementa su capa siguiendo la guía de su carpeta:
 
 | Capa | Guía |
