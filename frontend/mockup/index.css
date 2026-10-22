@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'DM Serif Display', ui-serif, Georgia, serif;
+
+  --color-forest-50: #edf7f1;
+  --color-forest-100: #d5eddf;
+  --color-forest-200: #a8dabd;
+  --color-forest-300: #72c49a;
+  --color-forest-400: #46a876;
+  --color-forest-500: #2d8a5a;
+  --color-forest-600: #266644;
+  --color-forest-700: #1e5235;
+  --color-forest-800: #163a27;
+  --color-forest-900: #102019;
+  --color-forest-950: #0b1a0f;
+
+  --color-warm-50: #f9f7f3;
+  --color-warm-100: #f2ede6;
+  --color-warm-200: #e5dccc;
+  --color-warm-300: #d4c8b0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  font-family: var(--font-sans);
+  background-color: var(--color-warm-50);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d4c8b0;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b8ad9a;
+}
