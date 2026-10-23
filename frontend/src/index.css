@@ -45,3 +45,16 @@ body,
 ::-webkit-scrollbar-thumb:hover {
   background: #b8ad9a;
 }
+
+:focus-visible {
+  outline-color: var(--color-forest-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
