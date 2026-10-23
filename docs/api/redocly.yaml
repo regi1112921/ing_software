@@ -1,0 +1,13 @@
+# Reglas con las que CI valida openapi.yaml (npx @redocly/cli lint).
+# Solo los errores hacen fallar el job; las advertencias se muestran.
+extends:
+  - recommended
+
+rules:
+  # Los servidores son locales (localhost), no ejemplos de producción.
+  no-server-example.com: off
+  # Proyecto académico sin licencia declarada.
+  info-license: off
+  # GET /health no tiene respuestas 4XX: siempre responde 200 o no responde.
+  operation-4xx-response:
+    severity: warn

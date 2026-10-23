@@ -75,6 +75,8 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 
 ## Endpoints
 
+Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../docs/api/README.md).
+
 ### Autenticación — http://localhost:3004
 | Método | Ruta | HU · RF | Descripción |
 |--------|------|---------|-------------|

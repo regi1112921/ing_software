@@ -1,5 +1,6 @@
 # Levanta todo el sistema en local:  docker compose up --build
 #   App:   http://localhost:8080
+#   API:   http://localhost:8081 (Swagger UI con docs/api/openapi.yaml)
 #   BD:    localhost:5433 (usuario, contraseña y base: huellas)
 # Guía completa: GUIA_EJECUCION.md
 
@@ -115,6 +116,17 @@ services:
       - veterinaria
       - adopcion
       - dashboard
+
+  # Documentación de la API (Swagger UI). "Try it out" llama directo a los servicios (CORS abierto).
+  swagger:
+    image: swaggerapi/swagger-ui:v5.17.14
+    restart: unless-stopped
+    environment:
+      SWAGGER_JSON: /api/openapi.yaml
+    volumes:
+      - ./docs/api/openapi.yaml:/api/openapi.yaml:ro
+    ports:
+      - "8081:8080"
 
 volumes:
   datos-bd:

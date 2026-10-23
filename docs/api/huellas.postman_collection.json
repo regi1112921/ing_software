@@ -1,0 +1,1687 @@
+{
+  "info": {
+    "_postman_id": "b5f8f653-149d-5414-abb3-449b467a1e66",
+    "name": "HUELLAS · API",
+    "description": "Colección de los cuatro microservicios de HUELLAS (SIS-213, UCB).\n\nCórrela en orden (Runner de Postman o `newman run`) con el entorno `local.postman_environment.json`: cada carpeta guarda en variables de la colección los ids que usa la siguiente.\n\nEspecificación completa: `docs/api/openapi.yaml`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "0 · Salud",
+      "description": "GET /health de los cuatro servicios (sin sesión).",
+      "item": [
+        {
+          "name": "Salud · autenticacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{authUrl}}/health",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('servicio autenticacion ok', () => pm.expect(pm.response.json()).to.eql({ servicio: 'autenticacion', estado: 'ok' }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Salud · veterinaria",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/health",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('servicio veterinaria ok', () => pm.expect(pm.response.json()).to.eql({ servicio: 'veterinaria', estado: 'ok' }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Salud · adopcion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/health",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('servicio adopcion ok', () => pm.expect(pm.response.json()).to.eql({ servicio: 'adopcion', estado: 'ok' }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Salud · dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/health",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('servicio dashboard ok', () => pm.expect(pm.response.json()).to.eql({ servicio: 'dashboard', estado: 'ok' }));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1 · Autenticación",
+      "description": "HU-02 Iniciar sesión · HU-03 Cerrar sesión · Registro de cuenta.",
+      "item": [
+        {
+          "name": "Login con contraseña incorrecta → 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/auth/login",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correoPersonal}}\",\n  \"contrasena\": \"incorrecta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('mensaje genérico', () => pm.expect(pm.response.json().error).to.eql('Usuario o contraseña incorrectos.'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login sin datos → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/auth/login",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detalle por campo: correo, contrasena', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['correo', 'contrasena']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login · personal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/auth/login",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correoPersonal}}\",\n  \"contrasena\": \"{{contrasena}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "HU-02 · RF-01. Guarda el token en la variable `token`, que usan las demás peticiones."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('devuelve token y usuario', () => { pm.expect(cuerpo.token).to.be.a('string').and.have.length.above(20); pm.expect(cuerpo.usuario.rol).to.eql('personal'); });",
+                  "pm.collectionVariables.set('token', cuerpo.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login · administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/auth/login",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correoAdmin}}\",\n  \"contrasena\": \"{{contrasena}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Token del rol administrador, el único que ve el Dashboard. Se guarda en `tokenAdmin`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('rol administrador', () => pm.expect(pm.response.json().usuario.rol).to.eql('administrador'));",
+                  "pm.collectionVariables.set('tokenAdmin', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Usuario de la sesión",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{authUrl}}/auth/sesion",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('es el usuario del login', () => pm.expect(pm.response.json().usuario.correo).to.eql(pm.environment.get('correoPersonal')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sesión sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{authUrl}}/auth/sesion",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', () => pm.response.to.have.status(401));",
+                  "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear cuenta (siempre rol personal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/auth/registro",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre_completo\": \"Usuario Postman\",\n  \"correo\": \"postman.{{$timestamp}}@peluchin.test\",\n  \"contrasena\": \"Clave-Segura-1\",\n  \"rol\": \"administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "Aunque se envíe `rol`, la cuenta se crea como `personal`. El correo cambia en cada corrida."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('se crea como personal', () => pm.expect(pm.response.json().usuario.rol).to.eql('personal'));",
+                  "pm.collectionVariables.set('tokenRegistro', pm.response.json().token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear cuenta con correo repetido → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{authUrl}}/auth/registro",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre_completo\": \"Repetido\",\n  \"correo\": \"{{correoPersonal}}\",\n  \"contrasena\": \"Clave-Segura-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('detalle por campo: correo', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['correo']));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 · Perros",
+      "description": "Servicio de Adopción. HU-04 Registrar · HU-05 Editar · HU-06 Listar, buscar y filtrar · HU-07 Ficha.",
+      "item": [
+        {
+          "name": "Catálogos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/catalogos",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "catalogos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('trae razas, tamaños y los 4 estados', () => { pm.expect(c.razas).to.not.be.empty; pm.expect(c.tamanos.map(t => t.codigo)).to.include('mediano'); pm.expect(c.estados_perro).to.have.length(4); });",
+                  "pm.collectionVariables.set('razaId', c.razas.find(r => r.nombre === 'Mestizo').id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar perros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('total coincide con la lista', () => pm.expect(c.total).to.eql(c.perros.length));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar por raza (lab)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros?buscar=lab",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros"
+              ],
+              "query": [
+                {
+                  "key": "buscar",
+                  "value": "lab"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('todos coinciden con la búsqueda', () => pm.response.json().perros.forEach(p => pm.expect((p.nombre + ' ' + p.raza).toLowerCase()).to.include('lab')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtrar por estado (en_tratamiento)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros?estado=en_tratamiento",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "en_tratamiento"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('todos están en tratamiento', () => pm.response.json().perros.forEach(p => pm.expect(p.estado).to.eql('en_tratamiento')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar perro",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Firulais Postman\",\n  \"raza_id\": {{razaId}},\n  \"sexo\": \"macho\",\n  \"tamano\": \"mediano\",\n  \"fecha_ingreso\": \"2026-10-01\",\n  \"edad_aproximada\": {\n    \"anios\": 2,\n    \"meses\": 3\n  },\n  \"color\": \"Marrón\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "HU-04 · RF-05. Con `edad_aproximada` se guarda una fecha de nacimiento estimada. Guarda `perroId`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const p = pm.response.json();",
+                  "pm.test('disponible, con fecha estimada y sin adopción', () => { pm.expect(p.estado).to.eql('disponible'); pm.expect(p.fecha_nacimiento_estimada).to.be.true; pm.expect(p.adopcion_vigente).to.be.null; });",
+                  "pm.collectionVariables.set('perroId', p.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar perro sin datos → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detalle por campo: nombre, raza_id, sexo, tamano, fecha_ingreso', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['nombre', 'raza_id', 'sexo', 'tamano', 'fecha_ingreso']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar perro como adoptado → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Firulais Postman\",\n  \"raza_id\": {{razaId}},\n  \"sexo\": \"macho\",\n  \"tamano\": \"mediano\",\n  \"fecha_ingreso\": \"2026-10-01\",\n  \"edad_aproximada\": {\n    \"anios\": 2,\n    \"meses\": 3\n  },\n  \"color\": \"Marrón\",\n  \"estado\": \"adoptado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Los estados de adopción solo los asigna el proceso de adopción."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detalle por campo: estado', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['estado']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ficha del perro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros/{{perroId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros",
+                "{{perroId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('es el perro registrado', () => pm.expect(pm.response.json().nombre).to.eql('Firulais Postman'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar perro",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros/{{perroId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros",
+                "{{perroId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Firulais Postman\",\n  \"raza_id\": {{razaId}},\n  \"sexo\": \"macho\",\n  \"tamano\": \"mediano\",\n  \"fecha_ingreso\": \"2026-10-01\",\n  \"edad_aproximada\": {\n    \"anios\": 2,\n    \"meses\": 3\n  },\n  \"color\": \"Negro\",\n  \"estado\": \"disponible\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('guardó el cambio', () => pm.expect(pm.response.json().color).to.eql('Negro'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ficha de un perro inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros/999999",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros",
+                "999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 · Veterinaria",
+      "description": "HU-08 Historial médico · HU-09 Registrar atención médica.",
+      "item": [
+        {
+          "name": "Veterinarios activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/veterinarios",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "veterinarios"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const v = pm.response.json().veterinarios;",
+                  "pm.test('hay al menos uno', () => pm.expect(v).to.not.be.empty);",
+                  "pm.collectionVariables.set('veterinarioId', v[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar atención médica",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/consultas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "consultas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"motivo\": \"Chequeo de ingreso\",\n  \"diagnostico\": \"Buen estado general\",\n  \"tratamiento\": \"Desparasitación\",\n  \"observaciones\": \"Registrado desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('trae el nombre del veterinario', () => pm.expect(pm.response.json().veterinario_nombre).to.be.a('string'));",
+                  "pm.collectionVariables.set('consultaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar atención sin datos → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/consultas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "consultas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detalle por campo: veterinario_id, motivo, diagnostico, tratamiento', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['veterinario_id', 'motivo', 'diagnostico', 'tratamiento']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historial médico del perro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/perros/{{perroId}}/historial",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "perros",
+                "{{perroId}}",
+                "historial"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('la atención registrada aparece primera', () => pm.expect(pm.response.json().consultas[0].id).to.eql(pm.collectionVariables.get('consultaId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historial de un perro inexistente → 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/perros/999999/historial",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "perros",
+                "999999",
+                "historial"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 404', () => pm.response.to.have.status(404));",
+                  "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 · Adopciones",
+      "description": "HU-10 Registrar · HU-11 Consultar · HU-12 Actualizar estado. Flujo completo sobre el perro de la carpeta 2.",
+      "item": [
+        {
+          "name": "Registrar adopción",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"adoptante\": {\n    \"nombre_completo\": \"Laura Ríos\",\n    \"telefono\": \"71112233\",\n    \"direccion\": \"Calle Jaén #10, La Paz\"\n  },\n  \"observaciones\": \"Solicitud de prueba (Postman)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "HU-10 · RF-13, RF-14, RF-19. Siempre en proceso; el perro pasa a en_adopcion. Guarda `adopcionId`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const a = pm.response.json();",
+                  "pm.test('en proceso y el perro en adopción', () => { pm.expect(a.estado).to.eql('en_proceso'); pm.expect(a.perro.estado).to.eql('en_adopcion'); pm.expect(a.transiciones_permitidas).to.eql(['aprobada', 'rechazada']); });",
+                  "pm.collectionVariables.set('adopcionId', a.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Otra adopción del mismo perro → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"adoptante\": {\n    \"nombre_completo\": \"Otra Persona\",\n    \"telefono\": \"72223344\",\n    \"direccion\": \"Calle 2, La Paz\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "RF-13: solo se adopta un perro disponible."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambiar a mano el estado del perro en adopción → 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/perros/{{perroId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "perros",
+                "{{perroId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Firulais Postman\",\n  \"raza_id\": {{razaId}},\n  \"sexo\": \"macho\",\n  \"tamano\": \"mediano\",\n  \"fecha_ingreso\": \"2026-10-01\",\n  \"edad_aproximada\": {\n    \"anios\": 2,\n    \"meses\": 3\n  },\n  \"color\": \"Marrón\",\n  \"estado\": \"en_tratamiento\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "RF-19: mientras hay una adopción en curso, el estado lo controla la adopción."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar adopciones",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye la nueva', () => pm.expect(pm.response.json().adopciones.map(a => a.id)).to.include(pm.collectionVariables.get('adopcionId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de la adopción",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('trae adoptante y perro', () => { const a = pm.response.json(); pm.expect(a.adoptante.nombre_completo).to.eql('Laura Ríos'); pm.expect(a.perro.id).to.eql(pm.collectionVariables.get('perroId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aprobar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/estado",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"aprobada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('aprobada con fecha', () => { const a = pm.response.json(); pm.expect(a.estado).to.eql('aprobada'); pm.expect(a.fecha_aprobacion).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aprobar otra vez → 409",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/estado",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"aprobada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "RF-17: transición no permitida."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));",
+                  "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Finalizar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/estado",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"finalizada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "RF-18: el perro pasa a adoptado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('finalizada, perro adoptado y sin más transiciones', () => { const a = pm.response.json(); pm.expect(a.estado).to.eql('finalizada'); pm.expect(a.perro.estado).to.eql('adoptado'); pm.expect(a.transiciones_permitidas).to.be.empty; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estado inválido → 400",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/estado",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"en_proceso\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detalle por campo: estado', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['estado']));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 · Dashboard",
+      "description": "HU-13 Indicadores · HU-14 Perros en tratamiento. Solo rol administrador (usa `tokenAdmin`).",
+      "item": [
+        {
+          "name": "Resumen e indicadores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/resumen",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "resumen"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('4 estados y el total es la suma', () => { pm.expect(r.por_estado).to.have.length(4); pm.expect(r.total).to.eql(r.por_estado.reduce((s, e) => s + e.cantidad, 0)); });",
+                  "pm.test('trae los 5 indicadores', () => pm.expect(r.indicadores).to.have.all.keys('en_albergue', 'disponibles', 'en_tratamiento', 'adopciones_mes', 'solicitudes_pendientes'));",
+                  "pm.test('la adopción finalizada cuenta en el mes', () => pm.expect(r.indicadores.adopciones_mes).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Perros en tratamiento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/perros-en-tratamiento",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "perros-en-tratamiento"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const f = pm.response.json().perros.map(p => p.fecha_ingreso);",
+                  "pm.test('del ingreso más antiguo al más reciente', () => pm.expect(f).to.eql([...f].sort()));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adopciones por mes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/adopciones-por-mes",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "adopciones-por-mes"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const m = pm.response.json().meses.map(x => x.mes);",
+                  "pm.test('12 meses en orden', () => { pm.expect(m).to.have.length(12); pm.expect(m).to.eql([...m].sort()); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resumen con rol personal → 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/resumen",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "resumen"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 403', () => pm.response.to.have.status(403));",
+                  "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 · Cerrar sesión",
+      "description": "HU-03 · RF-02. Cierra la sesión de la cuenta creada en la carpeta 1 y comprueba que el token ya no sirve.",
+      "item": [
+        {
+          "name": "Cerrar sesión",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{authUrl}}/auth/logout",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenRegistro}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Token cerrado → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{authUrl}}/auth/sesion",
+              "host": [
+                "{{authUrl}}"
+              ],
+              "path": [
+                "auth",
+                "sesion"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenRegistro}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "tokenAdmin",
+      "value": ""
+    },
+    {
+      "key": "tokenRegistro",
+      "value": ""
+    },
+    {
+      "key": "razaId",
+      "value": ""
+    },
+    {
+      "key": "perroId",
+      "value": ""
+    },
+    {
+      "key": "veterinarioId",
+      "value": ""
+    },
+    {
+      "key": "consultaId",
+      "value": ""
+    },
+    {
+      "key": "adopcionId",
+      "value": ""
+    }
+  ]
+}

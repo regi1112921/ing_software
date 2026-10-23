@@ -1,5 +1,7 @@
 # Sistema de Gestión de Refugio de Animales
 
+[![CI](https://github.com/regi1112921/ing_software/actions/workflows/ci.yml/badge.svg)](https://github.com/regi1112921/ing_software/actions/workflows/ci.yml)
+
 Sistema dividido en **tres capas independientes** y **cuatro servicios**:
 
 | Capa | Carpeta | Tecnología |
@@ -69,3 +71,9 @@ Las variables de entorno compartidas (puertos, conexión a la BD) están en `.en
 cópialo a `.env` y ajusta los valores.
 
 Más detalles en [docs/arquitectura.md](docs/arquitectura.md).
+
+## API e integración continua
+
+- Especificación OpenAPI (Swagger) y colección de Postman: **[docs/api/](docs/api/README.md)**.
+- CI con GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): pruebas del backend, build del frontend,
+  validación de la especificación y la colección de Postman corriendo contra los servicios en Docker.
