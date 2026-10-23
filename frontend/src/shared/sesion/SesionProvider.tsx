@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { autenticacionApi } from '@/api/autenticacion.api'
 import { EVENTO_SESION_EXPIRADA, tokenGuardado } from '@/api/http'
-import type { Usuario } from '@/api/tipos'
+import type { DatosRegistro, Usuario } from '@/api/tipos'
 import { SesionContext, type ValorSesion } from './SesionContext'
 
 export default function SesionProvider({ children }: { children: ReactNode }) {
@@ -37,6 +37,13 @@ export default function SesionProvider({ children }: { children: ReactNode }) {
     setUsuario(respuesta.usuario)
   }, [])
 
+  const registrarse = useCallback(async (datos: DatosRegistro) => {
+    const respuesta = await autenticacionApi.registrarse(datos)
+    tokenGuardado.guardar(respuesta.token)
+    setAviso(null)
+    setUsuario(respuesta.usuario)
+  }, [])
+
   const cerrarSesion = useCallback(async () => {
     try {
       await autenticacionApi.cerrarSesion()
@@ -49,8 +56,8 @@ export default function SesionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const valor = useMemo<ValorSesion>(
-    () => ({ usuario, verificando, aviso, iniciarSesion, cerrarSesion }),
-    [usuario, verificando, aviso, iniciarSesion, cerrarSesion],
+    () => ({ usuario, verificando, aviso, iniciarSesion, registrarse, cerrarSesion }),
+    [usuario, verificando, aviso, iniciarSesion, registrarse, cerrarSesion],
   )
 
   return <SesionContext.Provider value={valor}>{children}</SesionContext.Provider>

@@ -168,7 +168,7 @@ export default function AdopcionFormPage() {
                     value={form.documento_identidad}
                     onChange={(e) => cambiar('documento_identidad', e.target.value)}
                     className={CLASE_INPUT}
-                    placeholder="Ej: 1012345678"
+                    placeholder="Ej: 4875123"
                   />
                 </Campo>
                 <Campo etiqueta="Teléfono" obligatorio error={errores.telefono} ayuda="Entre 7 y 15 dígitos.">

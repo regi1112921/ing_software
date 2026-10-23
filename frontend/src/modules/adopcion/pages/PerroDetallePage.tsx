@@ -7,7 +7,7 @@ import { useCarga } from '@/shared/hooks/useCarga'
 import Cargando from '@/shared/components/Cargando'
 import Contenido from '@/shared/components/Contenido'
 import EncabezadoPagina from '@/shared/components/EncabezadoPagina'
-import FotoPerro from '@/shared/components/FotoPerro'
+import FotoAmpliable from '@/shared/components/FotoAmpliable'
 import InsigniaEstado from '@/shared/components/InsigniaEstado'
 import MensajeError from '@/shared/components/MensajeError'
 import { BOTON_SECUNDARIO, TARJETA } from '@/shared/utils/estilos'
@@ -86,7 +86,7 @@ export default function PerroDetallePage({ pestanaHistorial }: Props) {
       <Contenido>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <aside className={`${TARJETA} overflow-hidden self-start`}>
-            <FotoPerro url={perro.foto_url} nombre={perro.nombre} className="w-full h-56" tamanoIcono={40} />
+            <FotoAmpliable url={perro.foto_url} nombre={perro.nombre} className="w-full h-56" tamanoIcono={40} />
             <dl className="p-4">
               {[
                 { etiqueta: 'Color', valor: perro.color ?? '—' },

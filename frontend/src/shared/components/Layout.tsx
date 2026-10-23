@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Link, Outlet } from 'react-router-dom'
 import { Menu } from 'lucide-react'
 import BarraLateral from './BarraLateral'
 import Logo from './Logo'
@@ -23,7 +23,9 @@ export default function Layout() {
           >
             <Menu size={22} />
           </button>
-          <Logo />
+          <Link to="/" aria-label="Ir al inicio" className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-400">
+            <Logo />
+          </Link>
         </div>
         <main className="flex-1 flex flex-col overflow-hidden">
           <Outlet />

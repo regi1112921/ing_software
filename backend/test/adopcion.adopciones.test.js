@@ -30,7 +30,7 @@ describe('Servicio de Adopción · adopciones', () => {
       assert.deepEqual(fechas, [...fechas].sort().reverse())
       const primera = respuesta.body.adopciones[0]
       assert.equal(primera.perro.nombre, 'Bella')
-      assert.equal(primera.adoptante.telefono, '3001234567')
+      assert.equal(primera.adoptante.telefono, '71234567')
       assert.equal(primera.estado_nombre, 'En proceso')
     })
 
@@ -81,7 +81,7 @@ describe('Servicio de Adopción · adopciones', () => {
     it('reutiliza al adoptante si el documento ya está registrado', async () => {
       const canela = await idPerro(entorno.pool, 'Canela')
       const respuesta = await api.post('/adopciones').send(nuevaAdopcion(canela, {
-        adoptante: { nombre_completo: 'Otro Nombre', telefono: '7000000', direccion: 'Otra', documento_identidad: '52987654' },
+        adoptante: { nombre_completo: 'Otro Nombre', telefono: '7000000', direccion: 'Otra', documento_identidad: '6012478' },
       }))
       assert.equal(respuesta.status, 201)
       assert.equal(respuesta.body.adoptante.nombre_completo, 'Ana García López')

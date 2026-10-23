@@ -7,5 +7,9 @@ export function crearIndicadoresController(indicadoresService) {
     async perrosEnTratamiento(req, res) {
       res.json(await indicadoresService.perrosEnTratamiento())
     },
+
+    async adopcionesPorMes(req, res) {
+      res.json(await indicadoresService.adopcionesPorMes())
+    },
   }
 }

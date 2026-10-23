@@ -59,7 +59,7 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 
 ## Convenciones de la API
 
-- **Sesión:** todas las rutas (salvo `POST /auth/login` y `GET /health`) exigen `Authorization: Bearer <token>`.
+- **Sesión:** todas las rutas (salvo `POST /auth/login`, `POST /auth/registro` y `GET /health`) exigen `Authorization: Bearer <token>`.
   Sin sesión válida responden `401`.
 - **JSON** con nombres de campo en `snake_case`, iguales a las columnas de la BD. Fechas como `AAAA-MM-DD`.
 - **Errores:** `{ "error": "mensaje" }` y, en errores de validación, `"detalles": [{ "campo", "mensaje" }]`.
@@ -68,6 +68,7 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 |--------|--------|
 | 400 | Datos inválidos o faltantes |
 | 401 | Sin sesión, sesión cerrada o credenciales incorrectas |
+| 403 | El rol del usuario no tiene acceso (el Dashboard es solo para `administrador`) |
 | 404 | El recurso no existe |
 | 409 | Regla de negocio (perro no disponible, transición no permitida, estado controlado por la adopción) |
 | 503 | El servicio de Autenticación no responde |
@@ -78,6 +79,7 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | Método | Ruta | HU · RF | Descripción |
 |--------|------|---------|-------------|
 | POST | `/auth/login` | HU-02 · RF-01 | `{ correo, contrasena }` → `{ token, expira, usuario }` |
+| POST | `/auth/registro` | — | `{ nombre_completo, correo, contrasena }` → crea una cuenta con rol `personal` (201) y devuelve lo mismo que el login. Correo repetido → 409 |
 | POST | `/auth/logout` | HU-03 · RF-02 | Cierra la sesión del token enviado (204) |
 | GET | `/auth/sesion` | — | Usuario de la sesión (nombre y rol para el menú) |
 
@@ -102,14 +104,17 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | POST | `/consultas` | HU-09 · RF-12 | `{ perro_id, veterinario_id, fecha?, motivo, diagnostico, tratamiento, observaciones? }` |
 
 ### Dashboard — http://localhost:3003
+Solo el rol `administrador`; los demás roles reciben `403`. "Este mes" usa la fecha de la BD (`current_date`).
+
 | Método | Ruta | HU · RF | Descripción |
 |--------|------|---------|-------------|
-| GET | `/resumen` | HU-13 · RF-03 | `{ total, por_estado: [{ codigo, nombre, cantidad }] }` |
+| GET | `/resumen` | HU-13 · RF-03 | `{ total, por_estado: [{ codigo, nombre, cantidad }], indicadores: { en_albergue, disponibles, en_tratamiento, adopciones_mes, solicitudes_pendientes } }`. En el albergue = todos menos adoptados; pendientes = solicitudes en proceso o aprobadas |
 | GET | `/perros-en-tratamiento` | HU-14 · RF-04 | Del ingreso más antiguo al más reciente |
+| GET | `/adopciones-por-mes` | HU-13 | `{ meses: [{ mes: 'AAAA-MM', cantidad }] }`: adopciones finalizadas en los últimos 12 meses, incluidos los meses con 0 |
 
 Todos los servicios exponen `GET /health`.
 
 ## Fuera de alcance (sin RF en el SRS)
 
-Permisos por rol, bloqueo por intentos fallidos, vacunas, gestión de usuarios y subida de fotos
+Permisos por rol (salvo el Dashboard, solo para administración), bloqueo por intentos fallidos, vacunas, gestión de usuarios y subida de fotos
 (la foto se guarda como URL).

@@ -15,6 +15,13 @@ export interface Usuario {
   rol: Rol
 }
 
+// La cuenta se crea siempre con rol personal.
+export interface DatosRegistro {
+  nombre_completo: string
+  correo: string
+  contrasena: string
+}
+
 export interface RespuestaLogin {
   token: string
   expira: string
@@ -163,6 +170,18 @@ export interface DatosConsulta {
 export interface Resumen {
   total: number
   por_estado: { codigo: EstadoPerro; nombre: string; cantidad: number }[]
+  indicadores: {
+    en_albergue: number
+    disponibles: number
+    en_tratamiento: number
+    adopciones_mes: number
+    solicitudes_pendientes: number
+  }
+}
+
+// Últimos 12 meses, del más antiguo al actual. mes: 'AAAA-MM'.
+export interface AdopcionesPorMes {
+  meses: { mes: string; cantidad: number }[]
 }
 
 export interface PerrosEnTratamiento {

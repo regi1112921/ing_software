@@ -90,4 +90,45 @@ describe('Servicio de Autenticación', () => {
       assert.equal(respuesta.body.usuario.rol, 'personal')
     })
   })
+
+  describe('Registro de cuenta', () => {
+    const registro = (cuerpo) => request(entorno.apps.autenticacion).post('/auth/registro').send(cuerpo)
+    const datos = { nombre_completo: 'Sofía Quispe', correo: '  Sofia.Quispe@Peluchin.test ', contrasena: 'Clave-Segura-1' }
+
+    it('crea la cuenta como personal, abre sesión y luego permite iniciar sesión', async () => {
+      const respuesta = await registro(datos)
+      assert.equal(respuesta.status, 201)
+      assert.ok(respuesta.body.token.length >= 40)
+      assert.deepEqual(
+        { ...respuesta.body.usuario, id: undefined },
+        { id: undefined, nombre_completo: 'Sofía Quispe', correo: 'sofia.quispe@peluchin.test', rol: 'personal' },
+      )
+
+      const sesion = await request(entorno.apps.autenticacion).get('/auth/sesion').set('authorization', `Bearer ${respuesta.body.token}`)
+      assert.equal(sesion.status, 200)
+
+      const ingreso = await login({ correo: 'sofia.quispe@peluchin.test', contrasena: 'Clave-Segura-1' })
+      assert.equal(ingreso.status, 200)
+      const { rows } = await entorno.pool.query('select password_hash from usuarios where correo = $1', ['sofia.quispe@peluchin.test'])
+      assert.notEqual(rows[0].password_hash, 'Clave-Segura-1')
+    })
+
+    it('no deja elegir el rol: siempre crea personal', async () => {
+      const respuesta = await registro({ ...datos, correo: 'intruso@peluchin.test', rol: 'administrador' })
+      assert.equal(respuesta.status, 201)
+      assert.equal(respuesta.body.usuario.rol, 'personal')
+    })
+
+    it('un correo ya registrado responde 409 en el campo correo', async () => {
+      const respuesta = await registro({ ...datos, correo: PERSONAL.toUpperCase() })
+      assert.equal(respuesta.status, 409)
+      assert.deepEqual(respuesta.body.detalles.map((d) => d.campo), ['correo'])
+    })
+
+    it('valida nombre, correo y contraseña de al menos 8 caracteres', async () => {
+      const respuesta = await registro({ nombre_completo: '  ', correo: 'no-es-correo', contrasena: 'corta' })
+      assert.equal(respuesta.status, 400)
+      assert.deepEqual(respuesta.body.detalles.map((d) => d.campo).sort(), ['contrasena', 'correo', 'nombre_completo'])
+    })
+  })
 })

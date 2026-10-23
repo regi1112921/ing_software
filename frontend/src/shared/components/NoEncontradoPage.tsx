@@ -13,7 +13,7 @@ export default function NoEncontradoPage() {
         descripcion="La dirección no existe o fue movida."
         accion={
           <Link to="/" className={BOTON_PRIMARIO}>
-            Ir al dashboard
+            Ir al inicio
           </Link>
         }
       />

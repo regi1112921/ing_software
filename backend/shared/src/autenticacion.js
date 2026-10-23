@@ -1,5 +1,5 @@
 // Protección de rutas con la sesión emitida por el servicio de Autenticación.
-import { ErrorHttp, noAutenticado } from './errores.js'
+import { ErrorHttp, noAutenticado, prohibido } from './errores.js'
 
 function tokenDe(req) {
   const cabecera = req.get('authorization') || ''
@@ -16,6 +16,14 @@ export function crearExigirSesion(verificarSesion) {
     if (!usuario) throw noAutenticado('La sesión no es válida o ya expiró. Inicia sesión de nuevo.')
     req.usuario = usuario
     req.token = token
+    next()
+  }
+}
+
+// Va después de exigirSesion: deja pasar solo a los roles indicados (403 si no).
+export function exigirRol(...roles) {
+  return function verificarRol(req, res, next) {
+    if (!roles.includes(req.usuario?.rol)) throw prohibido()
     next()
   }
 }

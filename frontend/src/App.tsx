@@ -2,8 +2,10 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import SesionProvider from '@/shared/sesion/SesionProvider'
 import Layout from '@/shared/components/Layout'
 import NoEncontradoPage from '@/shared/components/NoEncontradoPage'
+import RutaPorRol from '@/shared/components/RutaPorRol'
 import RutaProtegida from '@/shared/components/RutaProtegida'
 import LoginPage from '@/modules/autenticacion/pages/LoginPage'
+import RegistroPage from '@/modules/autenticacion/pages/RegistroPage'
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage'
 import PerrosPage from '@/modules/adopcion/pages/PerrosPage'
 import PerroFormPage from '@/modules/adopcion/pages/PerroFormPage'
@@ -20,10 +22,14 @@ export default function App() {
       <SesionProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/registro" element={<RegistroPage />} />
 
           <Route element={<RutaProtegida />}>
             <Route element={<Layout />}>
-              <Route index element={<DashboardPage />} />
+              {/* Solo la administración ve el dashboard; el resto empieza en Perros. */}
+              <Route element={<RutaPorRol roles={['administrador']} redirigirA="/perros" />}>
+                <Route index element={<DashboardPage />} />
+              </Route>
 
               <Route path="perros" element={<PerrosPage />} />
               <Route path="perros/nuevo" element={<PerroFormPage />} />

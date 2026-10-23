@@ -4,6 +4,10 @@ export function crearAuthController(authService) {
       res.json(await authService.iniciarSesion(req.body))
     },
 
+    async registro(req, res) {
+      res.status(201).json(await authService.registrar(req.body))
+    },
+
     logout(req, res) {
       authService.cerrarSesion(req.token)
       res.status(204).end()

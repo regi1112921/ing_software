@@ -62,7 +62,7 @@ frontend/
     │
     └── modules/                 Un módulo por servicio
         ├── autenticacion/pages/ LoginPage
-        ├── dashboard/           DashboardPage + tarjetas, tabla y distribución
+        ├── dashboard/           DashboardPage + tarjetas, gráfico, tabla y distribución
         ├── adopcion/            Perros y adopciones (listados, formularios, fichas)
         └── veterinaria/         Historial médico y registro de atenciones
 ```
@@ -121,7 +121,8 @@ abierta, la app vuelve al inicio de sesión con el aviso "Tu sesión expiró".
 | Ruta | Pantalla | HU |
 |------|----------|----|
 | `/login` | Iniciar sesión | HU-02 |
-| `/` | Dashboard: tarjetas, distribución y perros en tratamiento | HU-13, HU-14 |
+| `/registro` | Crear cuenta (siempre con rol personal; deja la sesión iniciada) | — |
+| `/` | Dashboard (solo administración; los demás roles van a `/perros`): 5 indicadores, gráfico de adopciones por mes, distribución y perros en tratamiento | HU-13, HU-14 |
 | `/perros` | Listado con búsqueda y filtro por estado | HU-06 |
 | `/perros/nuevo` · `/perros/:id/editar` | Registrar / editar perro | HU-04, HU-05 |
 | `/perros/:id` | Ficha con pestañas Información, Historial médico y Adopción | HU-07, HU-08 |

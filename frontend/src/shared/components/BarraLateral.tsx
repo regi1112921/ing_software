@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { Heart, LayoutDashboard, LoaderCircle, LogOut, PawPrint, X } from 'lucide-react'
+import type { Rol } from '@/api/tipos'
 import { useSesion } from '@/shared/sesion/SesionContext'
 import { NOMBRE_ROL, iniciales } from '@/shared/utils/formato'
 import Logo from './Logo'
 
-const ENLACES = [
-  { a: '/', etiqueta: 'Dashboard', icono: LayoutDashboard, exacto: true },
+// roles: si se indica, el enlace solo se muestra a esos roles.
+const ENLACES: { a: string; etiqueta: string; icono: typeof PawPrint; exacto: boolean; roles?: Rol[] }[] = [
+  { a: '/', etiqueta: 'Dashboard', icono: LayoutDashboard, exacto: true, roles: ['administrador'] },
   { a: '/perros', etiqueta: 'Perros', icono: PawPrint, exacto: false },
   { a: '/adopciones', etiqueta: 'Adopciones', icono: Heart, exacto: false },
 ]
@@ -39,14 +41,22 @@ export default function BarraLateral({ abierta, onCerrar }: Props) {
         }`}
       >
         <div className="p-5 border-b border-forest-900 flex items-center justify-between">
-          <Logo subtitulo="Gestión del albergue" />
+          {/* "/" es el dashboard para la administración y Perros para el resto (ver App.tsx). */}
+          <Link
+            to="/"
+            onClick={onCerrar}
+            aria-label="Ir al inicio"
+            className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-400 hover:opacity-90 transition-opacity"
+          >
+            <Logo subtitulo="Gestión del albergue" />
+          </Link>
           <button type="button" onClick={onCerrar} aria-label="Cerrar menú" className="lg:hidden text-forest-300 hover:text-white p-1">
             <X size={20} />
           </button>
         </div>
 
         <nav aria-label="Principal" className="flex-1 p-3 pt-4 space-y-0.5">
-          {ENLACES.map(({ a, etiqueta, icono: Icono, exacto }) => (
+          {ENLACES.filter(({ roles }) => !roles || (usuario && roles.includes(usuario.rol))).map(({ a, etiqueta, icono: Icono, exacto }) => (
             <NavLink
               key={a}
               to={a}

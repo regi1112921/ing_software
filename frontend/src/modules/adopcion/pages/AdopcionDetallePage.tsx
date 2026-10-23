@@ -7,7 +7,7 @@ import Cargando from '@/shared/components/Cargando'
 import Contenido from '@/shared/components/Contenido'
 import DatoInfo from '@/shared/components/DatoInfo'
 import EncabezadoPagina from '@/shared/components/EncabezadoPagina'
-import FotoPerro from '@/shared/components/FotoPerro'
+import FotoAmpliable from '@/shared/components/FotoAmpliable'
 import InsigniaEstado from '@/shared/components/InsigniaEstado'
 import MensajeError from '@/shared/components/MensajeError'
 import { TARJETA } from '@/shared/utils/estilos'
@@ -68,7 +68,7 @@ export default function AdopcionDetallePage() {
                 </Link>
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                <FotoPerro url={perro.foto_url} nombre={perro.nombre} className="size-20 rounded-xl flex-shrink-0" />
+                <FotoAmpliable url={perro.foto_url} nombre={perro.nombre} className="size-20 rounded-xl flex-shrink-0" />
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 flex-1">
                   <DatoInfo etiqueta="Nombre" valor={perro.nombre} />
                   <DatoInfo etiqueta="Raza" valor={perro.raza} />

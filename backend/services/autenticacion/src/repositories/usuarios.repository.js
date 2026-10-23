@@ -11,6 +11,16 @@ export function crearUsuariosRepository(pool) {
       return rows[0] ?? null
     },
 
+    async crear({ nombre_completo, correo, rol }, passwordHash) {
+      const { rows } = await pool.query(
+        `insert into usuarios (nombre_completo, correo, rol, password_hash)
+         values ($1, $2, $3, $4)
+         returning id, nombre_completo, correo, rol, activo`,
+        [nombre_completo, correo, rol, passwordHash],
+      )
+      return rows[0]
+    },
+
     async asignarContrasena(correo, passwordHash) {
       const { rowCount } = await pool.query(
         'update usuarios set password_hash = $2 where correo = $1',

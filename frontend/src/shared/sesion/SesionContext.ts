@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import type { Usuario } from '@/api/tipos'
+import type { DatosRegistro, Usuario } from '@/api/tipos'
 
 export interface ValorSesion {
   usuario: Usuario | null
@@ -8,6 +8,8 @@ export interface ValorSesion {
   // Motivo por el que se cerró la sesión sin que la persona lo pidiera.
   aviso: string | null
   iniciarSesion: (correo: string, contrasena: string) => Promise<void>
+  // Crea la cuenta (rol personal) y deja la sesión iniciada.
+  registrarse: (datos: DatosRegistro) => Promise<void>
   cerrarSesion: () => Promise<void>
 }
 

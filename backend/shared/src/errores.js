@@ -11,6 +11,7 @@ export class ErrorHttp extends Error {
 
 export const solicitudInvalida = (mensaje, detalles) => new ErrorHttp(400, mensaje, detalles)
 export const noAutenticado = (mensaje = 'Debes iniciar sesión.') => new ErrorHttp(401, mensaje)
+export const prohibido = (mensaje = 'No tienes permiso para acceder a esta sección.') => new ErrorHttp(403, mensaje)
 export const noEncontrado = (mensaje) => new ErrorHttp(404, mensaje)
 export const conflicto = (mensaje) => new ErrorHttp(409, mensaje)
 
@@ -31,6 +32,8 @@ const MENSAJES_RESTRICCION = {
   uq_solicitudes_activa_por_perro: [409, 'El perro ya tiene una adopción en curso.'],
   uq_solicitudes_finalizada_por_perro: [409, 'El perro ya fue adoptado.'],
   uq_adoptantes_documento: [409, 'Ya existe un adoptante con ese documento de identidad.'],
+  uq_usuarios_correo: [409, 'Ya existe una cuenta con ese correo.'],
+  ck_usuarios_correo: [400, 'El correo no es válido.'],
 }
 
 // Traduce errores de PostgreSQL (código SQLSTATE) a respuestas HTTP.

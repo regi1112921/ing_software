@@ -19,5 +19,14 @@ export default function FotoPerro({ url, nombre, className = '', tamanoIcono = 2
       </div>
     )
   }
-  return <img src={url} alt={nombre} loading="lazy" onError={() => setUrlFallida(url)} className={`object-cover bg-gray-100 ${className}`} />
+  // Recorte algo por encima del centro: en las fotos verticales la cara del perro suele estar arriba.
+  return (
+    <img
+      src={url}
+      alt={nombre}
+      loading="lazy"
+      onError={() => setUrlFallida(url)}
+      className={`object-cover object-[50%_25%] bg-gray-100 ${className}`}
+    />
+  )
 }
