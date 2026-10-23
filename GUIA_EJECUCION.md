@@ -60,6 +60,7 @@ navegador ──► frontend (nginx :8080) ──► /api/autenticacion → aute
 | `db` | PostgreSQL. La primera vez ejecuta `database/instalar.sql`, los datos de prueba y asigna la contraseña de desarrollo (`database/docker/inicializar.sh`). |
 | `autenticacion`, `veterinaria`, `adopcion`, `dashboard` | Los 4 servicios del backend (una misma imagen, `backend/Dockerfile`). |
 | `frontend` | Compila React con Vite y lo sirve con nginx (`frontend/Dockerfile`, `frontend/nginx.conf`). |
+| `swagger` | Swagger UI en http://localhost:8081 con la especificación `docs/api/openapi.yaml`. |
 
 ### 5. Comandos útiles
 

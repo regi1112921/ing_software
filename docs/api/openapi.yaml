@@ -1,0 +1,837 @@
+openapi: 3.1.0
+info:
+  title: HUELLAS · API del albergue
+  version: 1.0.0
+  description: |
+    API REST de los cuatro microservicios de HUELLAS. Cada servicio corre en su propio puerto,
+    por eso cada ruta declara su `servers` (con Docker Compose o `npm run dev` en `backend/`).
+
+    **Sesión:** todas las rutas, salvo `POST /auth/login`, `POST /auth/registro` y `GET /health`,
+    exigen `Authorization: Bearer <token>`. El token se obtiene con `POST /auth/login`.
+
+    **Convenciones:** JSON con campos en `snake_case` (iguales a las columnas de la BD) y fechas `AAAA-MM-DD`.
+    Los errores responden `{ "error": "mensaje" }` y, si son de validación, también `detalles` por campo.
+
+    Usuarios de prueba (Docker, contraseña `huellas123`): `maria.alvarado@peluchin.test` (personal),
+    `andres.ramirez@peluchin.test` (veterinario) y `admin@peluchin.test` (administrador, el único que ve el Dashboard).
+  contact:
+    name: Equipo HUELLAS · SIS-213 Ingeniería del Software (UCB)
+
+servers:
+  - url: http://localhost:3004
+    description: Autenticación
+  - url: http://localhost:3002
+    description: Adopción
+  - url: http://localhost:3001
+    description: Veterinaria
+  - url: http://localhost:3003
+    description: Dashboard
+
+tags:
+  - name: Autenticación
+    description: "Puerto 3004 · HU-02, HU-03"
+  - name: Perros
+    description: "Servicio de Adopción, puerto 3002 · HU-04 a HU-07"
+  - name: Adopciones
+    description: "Servicio de Adopción, puerto 3002 · HU-10 a HU-12"
+  - name: Veterinaria
+    description: "Puerto 3001 · HU-08, HU-09"
+  - name: Dashboard
+    description: "Puerto 3003 · HU-13, HU-14. Solo rol administrador."
+  - name: Salud
+    description: Todos los servicios exponen `GET /health`.
+
+security:
+  - bearer: []
+
+paths:
+  # ───────────────────────── Autenticación ─────────────────────────
+  /auth/login:
+    servers: &srvAuth
+      - url: http://localhost:3004
+        description: Autenticación
+    post:
+      tags: [Autenticación]
+      summary: Iniciar sesión
+      description: "HU-02 · RF-01. Credenciales incorrectas, usuario inactivo o sin contraseña → 401 con el mismo mensaje."
+      operationId: iniciarSesion
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [correo, contrasena]
+              properties:
+                correo: { type: string, example: maria.alvarado@peluchin.test }
+                contrasena: { type: string, example: huellas123 }
+      responses:
+        '200':
+          description: Sesión iniciada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaLogin' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401':
+          description: Usuario o contraseña incorrectos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: Usuario o contraseña incorrectos. }
+
+  /auth/registro:
+    servers: *srvAuth
+    post:
+      tags: [Autenticación]
+      summary: Crear cuenta (rol personal)
+      description: Crea una cuenta siempre con rol `personal` y deja la sesión iniciada (misma respuesta que el login).
+      operationId: registrarse
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre_completo, correo, contrasena]
+              properties:
+                nombre_completo: { type: string, maxLength: 150, example: Sofía Quispe }
+                correo: { type: string, format: email, example: sofia.quispe@peluchin.test }
+                contrasena: { type: string, minLength: 8, maxLength: 72, example: Clave-Segura-1 }
+      responses:
+        '201':
+          description: Cuenta creada y sesión iniciada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RespuestaLogin' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '409':
+          description: Ya existe una cuenta con ese correo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /auth/logout:
+    servers: *srvAuth
+    post:
+      tags: [Autenticación]
+      summary: Cerrar sesión
+      description: HU-03 · RF-02. Invalida el token enviado.
+      operationId: cerrarSesion
+      responses:
+        '204': { description: Sesión cerrada }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+
+  /auth/sesion:
+    servers: *srvAuth
+    get:
+      tags: [Autenticación]
+      summary: Usuario de la sesión
+      description: La usan el frontend (nombre y rol para el menú) y los demás servicios para validar el token.
+      operationId: obtenerSesion
+      responses:
+        '200':
+          description: Sesión válida
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [usuario]
+                properties:
+                  usuario: { $ref: '#/components/schemas/Usuario' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+
+  # ───────────────────────── Adopción · perros ─────────────────────────
+  /catalogos:
+    servers: &srvAdopcion
+      - url: http://localhost:3002
+        description: Adopción
+    get:
+      tags: [Perros]
+      summary: Catálogos para los formularios
+      description: HU-04. Razas activas, tamaños y estados del perro y de la adopción.
+      operationId: listarCatalogos
+      responses:
+        '200':
+          description: Catálogos
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Catalogos' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+
+  /perros:
+    servers: *srvAdopcion
+    get:
+      tags: [Perros]
+      summary: Listar, buscar y filtrar perros
+      description: HU-06 · RF-07, RF-08, RF-09.
+      operationId: listarPerros
+      parameters:
+        - name: buscar
+          in: query
+          description: Busca por nombre o raza (sin distinguir mayúsculas).
+          schema: { type: string, maxLength: 100 }
+        - name: estado
+          in: query
+          description: Código del estado.
+          schema: { $ref: '#/components/schemas/EstadoPerro' }
+      responses:
+        '200':
+          description: Listado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, perros]
+                properties:
+                  total: { type: integer, example: 8 }
+                  perros:
+                    type: array
+                    items: { $ref: '#/components/schemas/Perro' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+    post:
+      tags: [Perros]
+      summary: Registrar perro
+      description: |
+        HU-04 · RF-05. Se indica `fecha_nacimiento` **o** `edad_aproximada` (no ambas).
+        El estado solo puede ser `disponible` (por defecto) o `en_tratamiento`; los de adopción los asigna el proceso de adopción.
+      operationId: registrarPerro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DatosPerro' }
+            example:
+              nombre: Firulais
+              raza_id: 1
+              sexo: macho
+              tamano: mediano
+              fecha_ingreso: '2026-10-01'
+              edad_aproximada: { anios: 2, meses: 0 }
+              color: Marrón
+      responses:
+        '201':
+          description: Perro registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PerroDetalle' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+
+  /perros/{id}:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Perros]
+      summary: Ficha de un perro
+      description: HU-07 · RF-10. Incluye la adopción vigente (en proceso o aprobada), si la hay.
+      operationId: obtenerPerro
+      responses:
+        '200':
+          description: Ficha
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PerroDetalle' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    put:
+      tags: [Perros]
+      summary: Editar perro
+      description: |
+        HU-05 · RF-06. Mismos campos que el registro. `estado` es opcional y solo puede ser
+        `disponible` o `en_tratamiento`; si el perro tiene una adopción en curso o ya fue adoptado responde 409.
+      operationId: editarPerro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DatosPerro' }
+      responses:
+        '200':
+          description: Perro actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PerroDetalle' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  # ───────────────────────── Adopción · adopciones ─────────────────────────
+  /adopciones:
+    servers: *srvAdopcion
+    get:
+      tags: [Adopciones]
+      summary: Listar adopciones
+      description: HU-11 · RF-15. De la solicitud más reciente a la más antigua.
+      operationId: listarAdopciones
+      responses:
+        '200':
+          description: Listado
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, adopciones]
+                properties:
+                  total: { type: integer, example: 3 }
+                  adopciones:
+                    type: array
+                    items: { $ref: '#/components/schemas/Adopcion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+    post:
+      tags: [Adopciones]
+      summary: Registrar adopción
+      description: |
+        HU-10 · RF-13, RF-14, RF-19. Solo para perros `disponible`. Siempre se crea `en_proceso`
+        y el perro pasa a `en_adopcion`. Si el `documento_identidad` ya existe, se reutiliza ese adoptante.
+      operationId: registrarAdopcion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [perro_id, adoptante]
+              properties:
+                perro_id: { type: integer, example: 6 }
+                adoptante:
+                  type: object
+                  required: [nombre_completo, telefono, direccion]
+                  properties:
+                    nombre_completo: { type: string, maxLength: 150, example: Laura Ríos }
+                    documento_identidad: { type: [string, 'null'], maxLength: 30, example: '9123456' }
+                    telefono:
+                      type: string
+                      description: 7 a 15 dígitos; puede empezar con `+`. Se ignoran espacios y guiones.
+                      example: '71112233'
+                    direccion: { type: string, maxLength: 250, example: 'Calle 1, La Paz' }
+                fecha_solicitud: { type: string, format: date, description: Hoy si no se indica. }
+                observaciones: { type: [string, 'null'], maxLength: 2000 }
+      responses:
+        '201':
+          description: Adopción registrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdopcionDetalle' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /adopciones/{id}:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Adopciones]
+      summary: Detalle de una adopción
+      description: HU-11 · RF-16. Incluye `transiciones_permitidas` desde el estado actual.
+      operationId: obtenerAdopcion
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdopcionDetalle' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /adopciones/{id}/estado:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    patch:
+      tags: [Adopciones]
+      summary: Cambiar el estado de una adopción
+      description: |
+        HU-12 · RF-17, RF-18, RF-19, RF-20. Transiciones: `en_proceso → aprobada | rechazada`,
+        `aprobada → finalizada | rechazada`. Al finalizar, el perro pasa a `adoptado`; al rechazar, vuelve a `disponible`.
+      operationId: cambiarEstadoAdopcion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { type: string, enum: [aprobada, rechazada, finalizada] }
+                fecha: { type: string, format: date, description: Hoy si no se indica. }
+                observaciones: { type: [string, 'null'], maxLength: 2000 }
+            example: { estado: aprobada }
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdopcionDetalle' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  # ───────────────────────── Veterinaria ─────────────────────────
+  /veterinarios:
+    servers: &srvVet
+      - url: http://localhost:3001
+        description: Veterinaria
+    get:
+      tags: [Veterinaria]
+      summary: Veterinarios activos
+      description: HU-09 · RF-12. Lista para elegir el responsable de una atención.
+      operationId: listarVeterinarios
+      responses:
+        '200':
+          description: Veterinarios
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [veterinarios]
+                properties:
+                  veterinarios:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, nombre_completo]
+                      properties:
+                        id: { type: integer, example: 2 }
+                        nombre_completo: { type: string, example: Andrés Ramírez }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+
+  /perros/{id}/historial:
+    servers: *srvVet
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Veterinaria]
+      summary: Historial médico de un perro
+      description: HU-08 · RF-11. De la atención más reciente a la más antigua.
+      operationId: historialMedico
+      responses:
+        '200':
+          description: Historial
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [perro_id, total, consultas]
+                properties:
+                  perro_id: { type: integer, example: 4 }
+                  total: { type: integer, example: 2 }
+                  consultas:
+                    type: array
+                    items: { $ref: '#/components/schemas/Consulta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /consultas:
+    servers: *srvVet
+    post:
+      tags: [Veterinaria]
+      summary: Registrar atención médica
+      description: HU-09 · RF-12. El responsable debe ser un usuario activo con rol veterinario.
+      operationId: registrarConsulta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [perro_id, veterinario_id, motivo, diagnostico, tratamiento]
+              properties:
+                perro_id: { type: integer, example: 4 }
+                veterinario_id: { type: integer, example: 2 }
+                fecha: { type: string, format: date, description: Hoy si no se indica. }
+                motivo: { type: string, maxLength: 200, example: Control }
+                diagnostico: { type: string, maxLength: 2000, example: Sano }
+                tratamiento: { type: string, maxLength: 2000, example: Ninguno }
+                observaciones: { type: [string, 'null'], maxLength: 2000 }
+      responses:
+        '201':
+          description: Atención registrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consulta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+
+  # ───────────────────────── Dashboard ─────────────────────────
+  /resumen:
+    servers: &srvDash
+      - url: http://localhost:3003
+        description: Dashboard
+    get:
+      tags: [Dashboard]
+      summary: Indicadores del albergue
+      description: |
+        HU-13 · RF-03. Total y cantidad por cada estado (también los que tienen 0) e indicadores principales.
+        "Este mes" usa la fecha de la BD.
+      operationId: resumenDashboard
+      responses:
+        '200':
+          description: Indicadores
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Resumen' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /perros-en-tratamiento:
+    servers: *srvDash
+    get:
+      tags: [Dashboard]
+      summary: Perros en tratamiento
+      description: HU-14 · RF-04. Del ingreso más antiguo al más reciente.
+      operationId: perrosEnTratamiento
+      responses:
+        '200':
+          description: Perros en tratamiento
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, perros]
+                properties:
+                  total: { type: integer, example: 2 }
+                  perros:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, nombre, sexo, raza, fecha_ingreso]
+                      properties:
+                        id: { type: integer }
+                        nombre: { type: string, example: Max }
+                        sexo: { $ref: '#/components/schemas/Sexo' }
+                        raza: { type: string, example: Border Collie }
+                        foto_url: { type: [string, 'null'] }
+                        fecha_ingreso: { type: string, format: date }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /adopciones-por-mes:
+    servers: *srvDash
+    get:
+      tags: [Dashboard]
+      summary: Adopciones finalizadas por mes
+      description: HU-13. Últimos 12 meses (incluido el actual), del más antiguo al actual, también los meses con 0.
+      operationId: adopcionesPorMes
+      responses:
+        '200':
+          description: Serie mensual
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [meses]
+                properties:
+                  meses:
+                    type: array
+                    items:
+                      type: object
+                      required: [mes, cantidad]
+                      properties:
+                        mes: { type: string, pattern: '^\d{4}-\d{2}$', example: '2026-10' }
+                        cantidad: { type: integer, example: 0 }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  # ───────────────────────── Salud ─────────────────────────
+  /health:
+    get:
+      tags: [Salud]
+      summary: Estado del servicio
+      description: Disponible en los cuatro puertos; sirve para los healthchecks de Docker.
+      operationId: salud
+      security: []
+      responses:
+        '200':
+          description: El servicio responde
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [servicio, estado]
+                properties:
+                  servicio: { type: string, enum: [autenticacion, veterinaria, adopcion, dashboard] }
+                  estado: { type: string, const: ok }
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: Token de `POST /auth/login`. Dura `SESION_HORAS` (8 h por defecto).
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+
+  responses:
+    Validacion:
+      description: Datos inválidos (un detalle por campo)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example:
+            error: Datos inválidos.
+            detalles:
+              - { campo: nombre, mensaje: El nombre es obligatorio. }
+              - { campo: fecha_ingreso, mensaje: La fecha de ingreso debe ser una fecha válida (AAAA-MM-DD). }
+    NoAutenticado:
+      description: Sin sesión, sesión cerrada o vencida
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: Debes iniciar sesión. }
+    Prohibido:
+      description: El rol del usuario no tiene acceso (el Dashboard es solo para administrador)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: No tienes permiso para acceder a esta sección. }
+    NoEncontrado:
+      description: El recurso no existe
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: El perro no existe. }
+    Conflicto:
+      description: Regla de negocio (perro no disponible, transición no permitida, estado controlado por la adopción)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: No se puede pasar una adopción de "Aprobada" a "Aprobada". }
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        detalles:
+          type: array
+          items:
+            type: object
+            required: [campo, mensaje]
+            properties:
+              campo: { type: [string, 'null'] }
+              mensaje: { type: string }
+
+    Rol:
+      type: string
+      enum: [administrador, veterinario, personal]
+    Sexo:
+      type: string
+      enum: [macho, hembra]
+    EstadoPerro:
+      type: string
+      enum: [disponible, en_tratamiento, en_adopcion, adoptado]
+    EstadoAdopcion:
+      type: string
+      enum: [en_proceso, aprobada, rechazada, finalizada]
+
+    Usuario:
+      type: object
+      required: [id, nombre_completo, correo, rol]
+      properties:
+        id: { type: integer, example: 4 }
+        nombre_completo: { type: string, example: María Alvarado }
+        correo: { type: string, format: email, example: maria.alvarado@peluchin.test }
+        rol: { $ref: '#/components/schemas/Rol' }
+
+    RespuestaLogin:
+      type: object
+      required: [token, expira, usuario]
+      properties:
+        token: { type: string, example: KbvPH1aJscNdcfHln62juRg6x4zTQzy4NOyciTOVpS0 }
+        expira: { type: string, format: date-time }
+        usuario: { $ref: '#/components/schemas/Usuario' }
+
+    Codigo:
+      type: object
+      required: [codigo, nombre]
+      properties:
+        codigo: { type: string }
+        nombre: { type: string }
+        descripcion: { type: string }
+
+    Catalogos:
+      type: object
+      required: [razas, tamanos, estados_perro, estados_solicitud]
+      properties:
+        razas:
+          type: array
+          items:
+            type: object
+            required: [id, nombre]
+            properties:
+              id: { type: integer, example: 1 }
+              nombre: { type: string, example: Mestizo }
+        tamanos:
+          type: array
+          items: { $ref: '#/components/schemas/Codigo' }
+        estados_perro:
+          type: array
+          items: { $ref: '#/components/schemas/Codigo' }
+        estados_solicitud:
+          type: array
+          items: { $ref: '#/components/schemas/Codigo' }
+
+    DatosPerro:
+      type: object
+      required: [nombre, raza_id, sexo, tamano, fecha_ingreso]
+      properties:
+        nombre: { type: string, maxLength: 80 }
+        raza_id: { type: integer }
+        sexo: { $ref: '#/components/schemas/Sexo' }
+        tamano: { type: string, description: 'Código del catálogo: pequeno, mediano o grande.' }
+        fecha_ingreso: { type: string, format: date }
+        fecha_nacimiento: { type: [string, 'null'], format: date }
+        edad_aproximada:
+          type: [object, 'null']
+          description: Alternativa a `fecha_nacimiento`; se guarda como fecha estimada.
+          properties:
+            anios: { type: integer, minimum: 0, maximum: 30 }
+            meses: { type: integer, minimum: 0, maximum: 11 }
+        color: { type: [string, 'null'], maxLength: 50 }
+        foto_url: { type: [string, 'null'], maxLength: 500, description: 'URL http:// o https://' }
+        estado:
+          type: string
+          enum: [disponible, en_tratamiento]
+          description: Por defecto `disponible` al registrar.
+
+    Perro:
+      type: object
+      required: [id, nombre, sexo, raza_id, raza, tamano, fecha_ingreso, estado, estado_nombre]
+      properties:
+        id: { type: integer, example: 3 }
+        nombre: { type: string, example: Bella }
+        sexo: { $ref: '#/components/schemas/Sexo' }
+        raza_id: { type: integer, example: 2 }
+        raza: { type: string, example: Beagle }
+        color: { type: [string, 'null'], example: Tricolor }
+        tamano: { type: string, example: pequeno }
+        tamano_nombre: { type: string, example: Pequeño }
+        fecha_nacimiento: { type: [string, 'null'], format: date }
+        fecha_nacimiento_estimada: { type: boolean }
+        edad_meses: { type: [integer, 'null'], example: 57 }
+        fecha_ingreso: { type: string, format: date }
+        estado: { $ref: '#/components/schemas/EstadoPerro' }
+        estado_nombre: { type: string, example: Disponible }
+        foto_url: { type: [string, 'null'] }
+        registrado_por: { type: [integer, 'null'] }
+        creado_en: { type: string, format: date-time }
+        actualizado_en: { type: string, format: date-time }
+
+    PerroDetalle:
+      allOf:
+        - $ref: '#/components/schemas/Perro'
+        - type: object
+          required: [adopcion_vigente]
+          properties:
+            adopcion_vigente:
+              description: Adopción en proceso o aprobada; `null` si no tiene.
+              oneOf:
+                - $ref: '#/components/schemas/Adopcion'
+                - type: 'null'
+
+    Adoptante:
+      type: object
+      required: [id, nombre_completo, telefono, direccion]
+      properties:
+        id: { type: integer }
+        nombre_completo: { type: string, example: Carlos Mendoza Vargas }
+        documento_identidad: { type: [string, 'null'], example: '4875123' }
+        telefono: { type: string, example: '71234567' }
+        direccion: { type: string, example: 'Av. 6 de Agosto #2170, Sopocachi, La Paz' }
+
+    Adopcion:
+      type: object
+      required: [id, estado, estado_nombre, fecha_solicitud, perro, adoptante]
+      properties:
+        id: { type: integer }
+        estado: { $ref: '#/components/schemas/EstadoAdopcion' }
+        estado_nombre: { type: string, example: En proceso }
+        fecha_solicitud: { type: string, format: date }
+        fecha_aprobacion: { type: [string, 'null'], format: date }
+        fecha_rechazo: { type: [string, 'null'], format: date }
+        fecha_adopcion: { type: [string, 'null'], format: date }
+        observaciones: { type: [string, 'null'] }
+        creado_en: { type: string, format: date-time }
+        actualizado_en: { type: string, format: date-time }
+        perro:
+          type: object
+          required: [id, nombre, estado]
+          properties:
+            id: { type: integer }
+            nombre: { type: string }
+            raza: { type: string }
+            sexo: { $ref: '#/components/schemas/Sexo' }
+            tamano: { type: string }
+            tamano_nombre: { type: string }
+            edad_meses: { type: [integer, 'null'] }
+            fecha_nacimiento_estimada: { type: boolean }
+            estado: { $ref: '#/components/schemas/EstadoPerro' }
+            estado_nombre: { type: string }
+            foto_url: { type: [string, 'null'] }
+        adoptante: { $ref: '#/components/schemas/Adoptante' }
+
+    AdopcionDetalle:
+      allOf:
+        - $ref: '#/components/schemas/Adopcion'
+        - type: object
+          required: [transiciones_permitidas]
+          properties:
+            transiciones_permitidas:
+              type: array
+              items: { $ref: '#/components/schemas/EstadoAdopcion' }
+              example: [aprobada, rechazada]
+
+    Consulta:
+      type: object
+      required: [id, perro_id, fecha, motivo, diagnostico, tratamiento, veterinario_id, veterinario_nombre]
+      properties:
+        id: { type: integer }
+        perro_id: { type: integer }
+        fecha: { type: string, format: date }
+        motivo: { type: string, example: Seguimiento de tratamiento }
+        diagnostico: { type: string }
+        tratamiento: { type: string }
+        observaciones: { type: [string, 'null'] }
+        veterinario_id: { type: integer }
+        veterinario_nombre: { type: string, example: Andrés Ramírez }
+        creado_en: { type: string, format: date-time }
+
+    Resumen:
+      type: object
+      required: [total, por_estado, indicadores]
+      properties:
+        total: { type: integer, example: 8 }
+        por_estado:
+          type: array
+          items:
+            type: object
+            required: [codigo, nombre, cantidad]
+            properties:
+              codigo: { $ref: '#/components/schemas/EstadoPerro' }
+              nombre: { type: string }
+              cantidad: { type: integer }
+        indicadores:
+          type: object
+          required: [en_albergue, disponibles, en_tratamiento, adopciones_mes, solicitudes_pendientes]
+          properties:
+            en_albergue: { type: integer, description: Todos menos los adoptados. }
+            disponibles: { type: integer }
+            en_tratamiento: { type: integer }
+            adopciones_mes: { type: integer, description: Adopciones finalizadas en el mes actual. }
+            solicitudes_pendientes: { type: integer, description: Solicitudes en proceso o aprobadas. }
