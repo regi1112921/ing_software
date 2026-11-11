@@ -1,4 +1,4 @@
-// HU-02 (RF-01) y HU-03 (RF-02)
+// HU-02 (RF-01), HU-03 (RF-02) y HU-07 (bloqueo tras intentos fallidos)
 import { after, before, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import request from 'supertest'
@@ -61,6 +61,61 @@ describe('Servicio de Autenticación', () => {
     })
   })
 
+  describe('HU-07 · Bloqueo tras intentos fallidos', () => {
+    const LUCIA = 'lucia.torres@peluchin.test'
+    const estado = async (correo) =>
+      (await entorno.pool.query('select intentos_fallidos, bloqueado_hasta from usuarios where correo = $1', [correo])).rows[0]
+    const desbloquear = (correo) =>
+      entorno.pool.query("update usuarios set bloqueado_hasta = now() - interval '1 minute' where correo = $1", [correo])
+
+    it('avisa en el 2.º intento y bloquea la cuenta en el 3.º (429), aunque luego la contraseña sea correcta', async () => {
+      const primero = await login({ correo: LUCIA, contrasena: 'mala-1' })
+      assert.equal(primero.status, 401)
+      assert.equal(primero.body.error, 'Usuario o contraseña incorrectos.')
+
+      const segundo = await login({ correo: LUCIA, contrasena: 'mala-2' })
+      assert.equal(segundo.status, 401)
+      assert.match(segundo.body.error, /Te queda 1 intento/)
+
+      const tercero = await login({ correo: LUCIA, contrasena: 'mala-3' })
+      assert.equal(tercero.status, 429)
+      assert.match(tercero.body.error, /bloqueada.*5 minutos/)
+
+      const conClaveCorrecta = await login({ correo: LUCIA, contrasena: CONTRASENA })
+      assert.equal(conClaveCorrecta.status, 429)
+      assert.match(conClaveCorrecta.body.error, /vuelve a intentarlo en [1-5] minutos?/)
+    })
+
+    it('al terminar el bloqueo se puede entrar y el contador vuelve a cero', async () => {
+      await desbloquear(LUCIA)
+      const respuesta = await login({ correo: LUCIA, contrasena: CONTRASENA })
+      assert.equal(respuesta.status, 200)
+      const { intentos_fallidos, bloqueado_hasta } = await estado(LUCIA)
+      assert.equal(intentos_fallidos, 0)
+      assert.equal(bloqueado_hasta, null)
+    })
+
+    it('un inicio de sesión correcto reinicia los intentos (no se acumulan entre sesiones)', async () => {
+      await login({ correo: LUCIA, contrasena: 'mala' })
+      await login({ correo: LUCIA, contrasena: 'mala' })
+      assert.equal((await login({ correo: LUCIA, contrasena: CONTRASENA })).status, 200)
+      const otraVez = await login({ correo: LUCIA, contrasena: 'mala' })
+      assert.equal(otraVez.body.error, 'Usuario o contraseña incorrectos.')
+      assert.equal((await estado(LUCIA)).intentos_fallidos, 1)
+      await login({ correo: LUCIA, contrasena: CONTRASENA })
+    })
+
+    it('correos inexistentes o cuentas desactivadas no se bloquean ni cambian el mensaje', async () => {
+      for (const correo of ['nadie@peluchin.test', 'inactivo@peluchin.test']) {
+        for (let i = 0; i < 4; i++) {
+          const respuesta = await login({ correo, contrasena: 'mala' })
+          assert.equal(respuesta.status, 401)
+          assert.equal(respuesta.body.error, 'Usuario o contraseña incorrectos.')
+        }
+      }
+    })
+  })
+
   describe('HU-03 · Cerrar sesión', () => {
     it('después de cerrar sesión el token deja de valer en todos los servicios', async () => {
       const token = await entorno.iniciarSesion()
@@ -95,7 +150,7 @@ describe('Servicio de Autenticación', () => {
     const registro = (cuerpo) => request(entorno.apps.autenticacion).post('/auth/registro').send(cuerpo)
     const datos = { nombre_completo: 'Sofía Quispe', correo: '  Sofia.Quispe@Peluchin.test ', contrasena: 'Clave-Segura-1' }
 
-    it('crea la cuenta como personal, abre sesión y luego permite iniciar sesión', async () => {
+    it('crea la cuenta como responsable de adopciones, abre sesión y luego permite iniciar sesión', async () => {
       const respuesta = await registro(datos)
       assert.equal(respuesta.status, 201)
       assert.ok(respuesta.body.token.length >= 40)
@@ -113,7 +168,7 @@ describe('Servicio de Autenticación', () => {
       assert.notEqual(rows[0].password_hash, 'Clave-Segura-1')
     })
 
-    it('no deja elegir el rol: siempre crea personal', async () => {
+    it('no deja elegir el rol: siempre crea responsable de adopciones', async () => {
       const respuesta = await registro({ ...datos, correo: 'intruso@peluchin.test', rol: 'administrador' })
       assert.equal(respuesta.status, 201)
       assert.equal(respuesta.body.usuario.rol, 'responsable_adopciones')
