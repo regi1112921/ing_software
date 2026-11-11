@@ -15,6 +15,8 @@ import AdopcionFormPage from '@/modules/adopcion/pages/AdopcionFormPage'
 import AdopcionDetallePage from '@/modules/adopcion/pages/AdopcionDetallePage'
 import HistorialMedico from '@/modules/veterinaria/components/HistorialMedico'
 import AtencionFormPage from '@/modules/veterinaria/pages/AtencionFormPage'
+import ControlesPendientesPage from '@/modules/veterinaria/pages/ControlesPendientesPage'
+import ControlFormPage from '@/modules/veterinaria/pages/ControlFormPage'
 
 export default function App() {
   return (
@@ -40,6 +42,12 @@ export default function App() {
               <Route path="perros/:id/editar" element={<PerroFormPage />} />
               <Route element={<RutaPorRol permiso="registrarAtencion" redirigirA="/perros" />}>
                 <Route path="perros/:id/atenciones/nueva" element={<AtencionFormPage />} />
+              </Route>
+
+              {/* HU-08: controles pendientes y registro de vacunas y desparasitaciones. */}
+              <Route element={<RutaPorRol permiso="controles" redirigirA="/perros" />}>
+                <Route path="controles" element={<ControlesPendientesPage />} />
+                <Route path="perros/:id/controles/nuevo" element={<ControlFormPage />} />
               </Route>
 
               {/* HU-07: Adopciones es de administración y de responsables de adopciones. */}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { Heart, LayoutDashboard, LoaderCircle, LogOut, PawPrint, X } from 'lucide-react'
+import { Heart, LayoutDashboard, LoaderCircle, LogOut, PawPrint, Syringe, X } from 'lucide-react'
 import { useSesion } from '@/shared/sesion/SesionContext'
 import { tienePermiso, type Permiso } from '@/shared/sesion/permisos'
 import { NOMBRE_ROL, iniciales } from '@/shared/utils/formato'
@@ -11,6 +11,7 @@ const ENLACES: { a: string; etiqueta: string; icono: typeof PawPrint; exacto: bo
   { a: '/', etiqueta: 'Dashboard', icono: LayoutDashboard, exacto: true, permiso: 'dashboard' },
   { a: '/perros', etiqueta: 'Perros', icono: PawPrint, exacto: false },
   { a: '/adopciones', etiqueta: 'Adopciones', icono: Heart, exacto: false, permiso: 'adopciones' },
+  { a: '/controles', etiqueta: 'Controles', icono: Syringe, exacto: false, permiso: 'controles' },
 ]
 
 interface Props {

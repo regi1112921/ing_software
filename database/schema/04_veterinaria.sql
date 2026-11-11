@@ -1,7 +1,7 @@
 -- =============================================================================
--- 03_veterinaria.sql — Historial médico: consultas y vacunas
+-- 03_veterinaria.sql — Historial médico: consultas, vacunas y desparasitaciones
 -- Dueño: servicio de Veterinaria.
--- El historial médico de un perro = sus consultas + sus vacunas.
+-- El historial médico de un perro = sus consultas + sus vacunas + sus desparasitaciones.
 -- =============================================================================
 
 -- Verifica que veterinario_id apunte a un usuario activo con rol veterinario.
@@ -93,4 +93,43 @@ create trigger trg_vacunas_actualizado_en
 
 create trigger trg_vacunas_validar_veterinario
   before insert or update of veterinario_id on vacunas
+  for each row execute function fn_validar_veterinario();
+
+-- -----------------------------------------------------------------------------
+-- desparasitaciones (HU-08)
+-- -----------------------------------------------------------------------------
+create table desparasitaciones (
+  id               bigint generated always as identity primary key,
+  perro_id         bigint      not null references perros (id),
+  veterinario_id   bigint      not null references usuarios (id),
+  consulta_id      bigint,
+  tipo             text        not null,
+  producto         text        not null,
+  fecha_aplicacion date        not null default current_date,
+  fecha_proxima    date,
+  observaciones    text,
+  creado_en        timestamptz not null default now(),
+  actualizado_en   timestamptz not null default now(),
+
+  constraint fk_desparasitaciones_consulta_mismo_perro
+    foreign key (consulta_id, perro_id) references consultas (id, perro_id),
+  constraint ck_desparasitaciones_tipo     check (tipo in ('interna', 'externa')),
+  constraint ck_desparasitaciones_producto check (btrim(producto) <> ''),
+  constraint ck_desparasitaciones_proxima  check (fecha_proxima is null or fecha_proxima > fecha_aplicacion)
+);
+
+comment on table  desparasitaciones is 'Desparasitaciones internas o externas aplicadas a un perro y fecha del próximo control.';
+comment on column desparasitaciones.consulta_id is 'Opcional: consulta en la que se aplicó.';
+
+create index ix_desparasitaciones_perro_fecha on desparasitaciones (perro_id, fecha_aplicacion desc);
+create index ix_desparasitaciones_proxima     on desparasitaciones (fecha_proxima) where fecha_proxima is not null;
+create index ix_desparasitaciones_consulta    on desparasitaciones (consulta_id) where consulta_id is not null;
+create index ix_desparasitaciones_veterinario on desparasitaciones (veterinario_id);
+
+create trigger trg_desparasitaciones_actualizado_en
+  before update on desparasitaciones
+  for each row execute function fn_actualizar_timestamp();
+
+create trigger trg_desparasitaciones_validar_veterinario
+  before insert or update of veterinario_id on desparasitaciones
   for each row execute function fn_validar_veterinario();

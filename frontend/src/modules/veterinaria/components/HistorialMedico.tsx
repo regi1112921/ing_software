@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
-import { Plus, Stethoscope } from 'lucide-react'
+import { Bug, Plus, Stethoscope, Syringe } from 'lucide-react'
+import type { Historial } from '@/api/tipos'
 import { veterinariaApi } from '@/api/veterinaria.api'
 import { useCarga } from '@/shared/hooks/useCarga'
 import { usePermiso } from '@/shared/sesion/permisos'
 import Cargando from '@/shared/components/Cargando'
 import EstadoVacio from '@/shared/components/EstadoVacio'
 import MensajeError from '@/shared/components/MensajeError'
-import { BOTON_PRIMARIO, TARJETA } from '@/shared/utils/estilos'
+import { BOTON_PRIMARIO, BOTON_SECUNDARIO, TARJETA } from '@/shared/utils/estilos'
 import { formatearFecha } from '@/shared/utils/formato'
 
 // HU-08 · Historial médico del perro (de la atención más reciente a la más antigua)
@@ -15,6 +16,7 @@ export default function HistorialMedico({ perroId }: { perroId: number }) {
   const rutaNueva = `/perros/${perroId}/atenciones/nueva`
   // HU-07: solo administración y veterinaria registran atenciones; el resto solo consulta.
   const puedeRegistrar = usePermiso('registrarAtencion')
+  const puedeRegistrarControl = usePermiso('controles')
 
   if (error) return <MensajeError mensaje={error} onReintentar={recargar} />
   if (!datos) return <Cargando />
@@ -86,6 +88,74 @@ export default function HistorialMedico({ perroId }: { perroId: number }) {
           ))}
         </ol>
       )}
+
+      <ControlesPreventivos datos={datos} rutaNueva={puedeRegistrarControl ? `/perros/${perroId}/controles/nuevo` : null} />
     </div>
+  )
+}
+
+// HU-08 · Vacunas y desparasitaciones del perro, de la más reciente a la más antigua.
+function ControlesPreventivos({ datos, rutaNueva }: { datos: Historial; rutaNueva: string | null }) {
+  const registros = [
+    ...datos.vacunas.map((v) => ({
+      clave: `v-${v.id}`,
+      icono: Syringe,
+      titulo: `Vacuna · ${v.nombre}`,
+      fecha: v.fecha_aplicacion,
+      proxima: v.fecha_proxima_dosis,
+      etiquetaProxima: 'Próxima dosis',
+      veterinario: v.veterinario_nombre,
+      observaciones: v.observaciones,
+    })),
+    ...datos.desparasitaciones.map((d) => ({
+      clave: `d-${d.id}`,
+      icono: Bug,
+      titulo: `Desparasitación ${d.tipo} · ${d.producto}`,
+      fecha: d.fecha_aplicacion,
+      proxima: d.fecha_proxima,
+      etiquetaProxima: 'Próximo control',
+      veterinario: d.veterinario_nombre,
+      observaciones: d.observaciones,
+    })),
+  ].sort((a, b) => b.fecha.localeCompare(a.fecha))
+
+  return (
+    <section aria-labelledby="titulo-controles" className="mt-8">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h3 id="titulo-controles" className="font-bold text-gray-800">
+          Vacunas y desparasitaciones <span className="text-sm font-normal text-gray-400">({registros.length})</span>
+        </h3>
+        {rutaNueva && (
+          <Link to={rutaNueva} className={BOTON_SECUNDARIO}>
+            <Plus size={14} /> Registrar vacuna o desparasitación
+          </Link>
+        )}
+      </div>
+      {registros.length === 0 ? (
+        <p className={`${TARJETA} p-5 text-sm text-gray-500`}>Todavía no hay vacunas ni desparasitaciones registradas.</p>
+      ) : (
+        <ul className={`${TARJETA} divide-y divide-warm-100`}>
+          {registros.map((r) => (
+            <li key={r.clave} className="flex items-start gap-3 p-4">
+              <div className="size-8 rounded-full bg-warm-50 border border-warm-200 flex items-center justify-center flex-shrink-0">
+                <r.icono size={14} className="text-forest-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-gray-900 text-sm">{r.titulo}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  <time dateTime={r.fecha}>{formatearFecha(r.fecha)}</time> · {r.veterinario}
+                  {r.proxima && (
+                    <>
+                      {' '}· {r.etiquetaProxima}: <time dateTime={r.proxima}>{formatearFecha(r.proxima)}</time>
+                    </>
+                  )}
+                </p>
+                {r.observaciones && <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">{r.observaciones}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   )
 }

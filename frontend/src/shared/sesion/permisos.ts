@@ -7,6 +7,8 @@ export const PERMISOS = {
   dashboard: ['administrador'],
   adopciones: ['administrador', 'responsable_adopciones'],
   registrarAtencion: ['administrador', 'veterinario'],
+  // HU-08: lista de controles pendientes y registro de vacunas y desparasitaciones.
+  controles: ['administrador', 'veterinario'],
 } as const satisfies Record<string, readonly Rol[]>
 
 export type Permiso = keyof typeof PERMISOS
