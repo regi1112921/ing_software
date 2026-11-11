@@ -4,6 +4,7 @@ import { Pencil } from 'lucide-react'
 import { adopcionApi } from '@/api/adopcion.api'
 import type { PerroDetalle } from '@/api/tipos'
 import { useCarga } from '@/shared/hooks/useCarga'
+import { usePermiso } from '@/shared/sesion/permisos'
 import Cargando from '@/shared/components/Cargando'
 import Contenido from '@/shared/components/Contenido'
 import EncabezadoPagina from '@/shared/components/EncabezadoPagina'
@@ -32,7 +33,10 @@ interface Props {
 export default function PerroDetallePage({ pestanaHistorial }: Props) {
   const { id } = useParams()
   const [parametros, setParametros] = useSearchParams()
-  const pestana = (PESTANAS.some((p) => p.id === parametros.get('pestana')) ? parametros.get('pestana') : 'info') as Pestana
+  // HU-07: la pestaña Adopción solo la ven quienes tienen el módulo de adopciones.
+  const verAdopcion = usePermiso('adopciones')
+  const pestanas = verAdopcion ? PESTANAS : PESTANAS.filter((p) => p.id !== 'adopcion')
+  const pestana = (pestanas.some((p) => p.id === parametros.get('pestana')) ? parametros.get('pestana') : 'info') as Pestana
   const { datos: perro, error, recargar } = useCarga(() => adopcionApi.obtenerPerro(id!), [id])
 
   if (error && !perro) {
@@ -103,7 +107,7 @@ export default function PerroDetallePage({ pestanaHistorial }: Props) {
 
           <div className="lg:col-span-2 min-w-0">
             <div role="tablist" aria-label="Secciones de la ficha" className="flex gap-1 bg-warm-100 p-1 rounded-xl mb-5 w-full sm:w-fit overflow-x-auto">
-              {PESTANAS.map((p) => (
+              {pestanas.map((p) => (
                 <button
                   key={p.id}
                   type="button"

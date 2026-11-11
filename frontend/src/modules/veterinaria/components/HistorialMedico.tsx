@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { Plus, Stethoscope } from 'lucide-react'
 import { veterinariaApi } from '@/api/veterinaria.api'
 import { useCarga } from '@/shared/hooks/useCarga'
+import { usePermiso } from '@/shared/sesion/permisos'
 import Cargando from '@/shared/components/Cargando'
 import EstadoVacio from '@/shared/components/EstadoVacio'
 import MensajeError from '@/shared/components/MensajeError'
@@ -12,6 +13,8 @@ import { formatearFecha } from '@/shared/utils/formato'
 export default function HistorialMedico({ perroId }: { perroId: number }) {
   const { datos, error, recargar } = useCarga(() => veterinariaApi.obtenerHistorial(perroId), [perroId])
   const rutaNueva = `/perros/${perroId}/atenciones/nueva`
+  // HU-07: solo administración y veterinaria registran atenciones; el resto solo consulta.
+  const puedeRegistrar = usePermiso('registrarAtencion')
 
   if (error) return <MensajeError mensaje={error} onReintentar={recargar} />
   if (!datos) return <Cargando />
@@ -22,7 +25,7 @@ export default function HistorialMedico({ perroId }: { perroId: number }) {
         <p className="text-sm text-gray-500">
           {datos.total} {datos.total === 1 ? 'atención registrada' : 'atenciones registradas'}
         </p>
-        {datos.total > 0 && (
+        {datos.total > 0 && puedeRegistrar && (
           <Link to={rutaNueva} className={BOTON_PRIMARIO}>
             <Plus size={14} /> Registrar atención
           </Link>
@@ -34,11 +37,17 @@ export default function HistorialMedico({ perroId }: { perroId: number }) {
           <EstadoVacio
             icono={Stethoscope}
             titulo="Sin historial médico"
-            descripcion="Registra la primera atención médica del perro."
+            descripcion={
+              puedeRegistrar
+                ? 'Registra la primera atención médica del perro.'
+                : 'Todavía no hay atenciones médicas registradas para este perro.'
+            }
             accion={
-              <Link to={rutaNueva} className={BOTON_PRIMARIO}>
-                <Plus size={14} /> Registrar atención
-              </Link>
+              puedeRegistrar ? (
+                <Link to={rutaNueva} className={BOTON_PRIMARIO}>
+                  <Plus size={14} /> Registrar atención
+                </Link>
+              ) : undefined
             }
           />
         </div>

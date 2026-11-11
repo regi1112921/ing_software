@@ -1,3 +1,5 @@
+import { puedeVerAdopciones } from '../permisos.js'
+
 export function crearPerrosController(perrosService) {
   return {
     async listar(req, res) {
@@ -6,7 +8,8 @@ export function crearPerrosController(perrosService) {
     },
 
     async obtener(req, res) {
-      res.json(await perrosService.obtener(req.params.id))
+      // Veterinaria no ve la adopción vigente (trae los datos del adoptante): HU-07.
+      res.json(await perrosService.obtener(req.params.id, { verAdopcion: puedeVerAdopciones(req.usuario) }))
     },
 
     async crear(req, res) {
@@ -14,7 +17,7 @@ export function crearPerrosController(perrosService) {
     },
 
     async actualizar(req, res) {
-      res.json(await perrosService.actualizar(req.params.id, req.body))
+      res.json(await perrosService.actualizar(req.params.id, req.body, { verAdopcion: puedeVerAdopciones(req.usuario) }))
     },
   }
 }

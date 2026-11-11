@@ -1,9 +1,13 @@
 import { Router } from 'express'
+import { ROLES, exigirRol } from '@huellas/shared'
+
+// HU-07: todos los roles consultan el historial; solo administración y veterinaria registran atenciones.
+const puedeRegistrarAtencion = exigirRol(ROLES.administrador, ROLES.veterinario)
 
 export function crearHistorialRoutes(controller) {
   const router = Router()
   router.get('/veterinarios', controller.veterinarios)        // HU-09 · RF-12 (lista de responsables)
   router.get('/perros/:id/historial', controller.historial)   // HU-08 · RF-11
-  router.post('/consultas', controller.registrarConsulta)     // HU-09 · RF-12
+  router.post('/consultas', puedeRegistrarAtencion, controller.registrarConsulta) // HU-09 · RF-12
   return router
 }

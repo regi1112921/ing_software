@@ -243,7 +243,7 @@
           ]
         },
         {
-          "name": "Login · personal",
+          "name": "Login · responsable de adopciones",
           "request": {
             "method": "POST",
             "header": [
@@ -401,7 +401,7 @@
           ]
         },
         {
-          "name": "Crear cuenta (siempre rol personal)",
+          "name": "Crear cuenta (siempre rol responsable de adopciones)",
           "request": {
             "method": "POST",
             "header": [
@@ -921,6 +921,16 @@
                   "language": "json"
                 }
               }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "event": [
@@ -932,6 +942,47 @@
                   "pm.test('responde 201', () => pm.response.to.have.status(201));",
                   "pm.test('trae el nombre del veterinario', () => pm.expect(pm.response.json().veterinario_nombre).to.be.a('string'));",
                   "pm.collectionVariables.set('consultaId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar atención como responsable de adopciones → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/consultas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "consultas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"motivo\": \"Chequeo de ingreso\",\n  \"diagnostico\": \"Buen estado general\",\n  \"tratamiento\": \"Desparasitación\",\n  \"observaciones\": \"Registrado desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403: solo administración y veterinaria registran atenciones (HU-07)', () => pm.response.to.have.status(403));"
                 ]
               }
             }
@@ -964,6 +1015,16 @@
                   "language": "json"
                 }
               }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "event": [
@@ -1538,7 +1599,7 @@
           ]
         },
         {
-          "name": "Resumen con rol personal → 403",
+          "name": "Resumen con rol responsable de adopciones → 403",
           "request": {
             "method": "GET",
             "header": [],

@@ -34,7 +34,7 @@ Todos los usuarios de prueba tienen la contraseña **`huellas123`**:
 
 | Correo | Rol |
 |--------|-----|
-| `maria.alvarado@peluchin.test` | Personal del albergue |
+| `maria.alvarado@peluchin.test` | Responsable de adopciones |
 | `andres.ramirez@peluchin.test` | Veterinario |
 | `lucia.torres@peluchin.test` | Veterinaria |
 | `admin@peluchin.test` | Administrador |

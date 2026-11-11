@@ -51,3 +51,11 @@ export function origenesCors() {
 export function horasSesion() {
   return entero('SESION_HORAS', 8)
 }
+
+// HU-07: tras maxIntentos fallidos seguidos, la cuenta queda bloqueada minutosBloqueo minutos.
+export function bloqueoLogin() {
+  return {
+    maxIntentos: entero('LOGIN_MAX_INTENTOS', 3),
+    minutosBloqueo: entero('LOGIN_MINUTOS_BLOQUEO', 5),
+  }
+}

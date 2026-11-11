@@ -1,4 +1,5 @@
-import { crearApp } from '@huellas/shared'
+import { crearApp, exigirRol } from '@huellas/shared'
+import { ROLES_ADOPCIONES } from './permisos.js'
 import { crearCatalogosRepository } from './repositories/catalogos.repository.js'
 import { crearPerrosRepository } from './repositories/perros.repository.js'
 import { crearAdoptantesRepository } from './repositories/adoptantes.repository.js'
@@ -27,7 +28,12 @@ export function crearAppAdopcion({ pool, verificarSesion }) {
     rutas: (app, { exigirSesion }) => {
       app.use('/catalogos', exigirSesion, crearCatalogosRoutes(crearCatalogosController(catalogos)))
       app.use('/perros', exigirSesion, crearPerrosRoutes(crearPerrosController(perrosService)))
-      app.use('/adopciones', exigirSesion, crearAdopcionesRoutes(crearAdopcionesController(adopcionesService)))
+      app.use(
+        '/adopciones',
+        exigirSesion,
+        exigirRol(...ROLES_ADOPCIONES),
+        crearAdopcionesRoutes(crearAdopcionesController(adopcionesService)),
+      )
     },
   })
 }

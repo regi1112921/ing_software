@@ -7,6 +7,13 @@ function tokenDe(req) {
   return tipo?.toLowerCase() === 'bearer' && token ? token : null
 }
 
+// Roles del sistema (usuarios.rol). HU-07: cada rol solo accede a sus módulos.
+export const ROLES = Object.freeze({
+  administrador: 'administrador',
+  veterinario: 'veterinario',
+  responsableAdopciones: 'responsable_adopciones',
+})
+
 // verificarSesion(token) → usuario | null
 export function crearExigirSesion(verificarSesion) {
   return async function exigirSesion(req, res, next) {
