@@ -10,19 +10,24 @@ const esquemaConsulta = z.object({
   observaciones: campos.textoOpcional('Las observaciones', 2000),
 })
 
-export function crearHistorialService({ consultas, lecturas }) {
+export function crearHistorialService({ consultas, controles, lecturas }) {
   return {
     // Lista para elegir el veterinario responsable (HU-09 · RF-12).
     listarVeterinarios() {
       return lecturas.veterinariosActivos()
     },
 
-    // HU-08 · RF-11: de la atención más reciente a la más antigua.
+    // RF-11: de la atención más reciente a la más antigua. Incluye vacunas y
+    // desparasitaciones (HU-08), también de la más reciente a la más antigua.
     async historialDePerro(idCrudo) {
       const perroId = validar(campos.id('El perro'), idCrudo)
       if (!(await lecturas.existePerro(perroId))) throw noEncontrado('El perro no existe.')
-      const atenciones = await consultas.listarPorPerro(perroId)
-      return { perro_id: perroId, total: atenciones.length, consultas: atenciones }
+      const [atenciones, vacunas, desparasitaciones] = await Promise.all([
+        consultas.listarPorPerro(perroId),
+        controles.vacunasDePerro(perroId),
+        controles.desparasitacionesDePerro(perroId),
+      ])
+      return { perro_id: perroId, total: atenciones.length, consultas: atenciones, vacunas, desparasitaciones }
     },
 
     // HU-09 · RF-12
