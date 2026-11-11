@@ -6,8 +6,8 @@ info:
     API REST de los cuatro microservicios de HUELLAS. Cada servicio corre en su propio puerto,
     por eso cada ruta declara su `servers` (con Docker Compose o `npm run dev` en `backend/`).
 
-    **Sesión:** todas las rutas, salvo `POST /auth/login`, `POST /auth/registro` y `GET /health`,
-    exigen `Authorization: Bearer <token>`. El token se obtiene con `POST /auth/login`.
+    **Sesión:** todas las rutas, salvo `POST /auth/login`, `POST /auth/registro`, `GET /health` y las del
+    catálogo público (`/publico/*`, HU-09), exigen `Authorization: Bearer <token>`. El token se obtiene con `POST /auth/login`.
 
     **Convenciones:** JSON con campos en `snake_case` (iguales a las columnas de la BD) y fechas `AAAA-MM-DD`.
     Los errores responden `{ "error": "mensaje" }` y, si son de validación, también `detalles` por campo.
@@ -34,6 +34,10 @@ tags:
     description: "Servicio de Adopción, puerto 3002 · HU-04 a HU-07"
   - name: Adopciones
     description: "Servicio de Adopción, puerto 3002 · HU-10 a HU-12"
+  - name: Catálogo público
+    description: "Servicio de Adopción, puerto 3002 · HU-09. Sin sesión: lo usa el sitio público (Vercel)."
+  - name: Solicitudes web
+    description: "Servicio de Adopción, puerto 3002 · HU-09. Bandeja privada de las solicitudes del catálogo (administrador y responsable_adopciones)."
   - name: Veterinaria
     description: "Puerto 3001 · HU-08, HU-09"
   - name: Dashboard
@@ -319,6 +323,9 @@ paths:
                     direccion: { type: string, maxLength: 250, example: 'Calle 1, La Paz' }
                 fecha_solicitud: { type: string, format: date, description: Hoy si no se indica. }
                 observaciones: { type: [string, 'null'], maxLength: 2000 }
+                solicitud_publica_id:
+                  type: [integer, 'null']
+                  description: "HU-09: solicitud del catálogo público de la que nace la adopción. Debe estar pendiente y ser del mismo perro; queda `convertida` en la misma transacción."
       responses:
         '201':
           description: Adopción registrada
@@ -379,6 +386,184 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AdopcionDetalle' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  # ───────────────────────── Adopción · catálogo público (HU-09) ─────────────────────────
+  /publico/filtros:
+    servers: *srvAdopcion
+    get:
+      tags: [Catálogo público]
+      summary: Opciones de los filtros del catálogo
+      operationId: filtrosCatalogo
+      security: []
+      responses:
+        '200':
+          description: Tamaños, sexos y rangos de edad
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tamanos, sexos, edades]
+                properties:
+                  tamanos: { type: array, items: { $ref: '#/components/schemas/Codigo' } }
+                  sexos: { type: array, items: { $ref: '#/components/schemas/Codigo' } }
+                  edades:
+                    type: array
+                    description: "cachorro (< 12 meses), joven (12–35), adulto (36–95), senior (≥ 96)."
+                    items: { $ref: '#/components/schemas/Codigo' }
+
+  /publico/perros:
+    servers: *srvAdopcion
+    get:
+      tags: [Catálogo público]
+      summary: Perros disponibles para adopción
+      description: >-
+        HU-09. Solo perros en estado `disponible` y solo datos públicos. Con filtro de edad no salen
+        los perros de edad desconocida. Del ingreso más antiguo al más reciente.
+      operationId: catalogoPerros
+      security: []
+      parameters:
+        - { name: tamano, in: query, required: false, schema: { type: string, example: pequeno } }
+        - { name: sexo, in: query, required: false, schema: { type: string, enum: [macho, hembra] } }
+        - { name: edad, in: query, required: false, schema: { type: string, enum: [cachorro, joven, adulto, senior] } }
+      responses:
+        '200':
+          description: Catálogo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, perros]
+                properties:
+                  total: { type: integer, example: 4 }
+                  perros: { type: array, items: { $ref: '#/components/schemas/PerroPublico' } }
+        '400': { $ref: '#/components/responses/Validacion' }
+
+  /publico/perros/{id}:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Catálogo público]
+      summary: Ficha pública de un perro
+      description: HU-09. 404 si el perro no existe o ya no está disponible.
+      operationId: catalogoPerro
+      security: []
+      responses:
+        '200':
+          description: Ficha
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PerroPublico' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /publico/solicitudes:
+    servers: *srvAdopcion
+    post:
+      tags: [Catálogo público]
+      summary: Enviar solicitud de adopción desde la ficha
+      description: >-
+        HU-09. Guarda una pre-solicitud `pendiente` (no crea la adopción ni cambia el perro). La misma persona
+        (teléfono) no puede repetir una solicitud pendiente del mismo perro (409). Limitado por IP
+        (`SOLICITUDES_PUBLICAS_MAXIMO` por `SOLICITUDES_PUBLICAS_VENTANA_MINUTOS`, 5 por hora por defecto) → 429.
+        `sitio_web` es un campo trampa para bots: si llega con texto se responde 201 sin guardar nada.
+      operationId: enviarSolicitudPublica
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [perro_id, nombre_completo, telefono]
+              properties:
+                perro_id: { type: integer, example: 5 }
+                nombre_completo: { type: string, maxLength: 150, example: Laura Quispe }
+                telefono: { type: string, description: 7 a 15 dígitos; puede empezar con `+`. Se ignoran espacios y guiones., example: '70012345' }
+                correo: { type: [string, 'null'], format: email }
+                mensaje: { type: [string, 'null'], maxLength: 1000, example: Tengo patio grande. }
+                sitio_web: { type: string, description: Campo trampa; debe ir vacío. }
+      responses:
+        '201':
+          description: Solicitud recibida
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mensaje]
+                properties:
+                  mensaje: { type: string, example: '¡Gracias! Recibimos tu solicitud para adoptar a Coco. El albergue te contactará pronto.' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+        '429':
+          description: Demasiadas solicitudes desde la misma IP. Incluye la cabecera `Retry-After` (segundos).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /solicitudes-publicas:
+    servers: *srvAdopcion
+    get:
+      tags: [Solicitudes web]
+      summary: Bandeja de solicitudes del catálogo
+      description: HU-09. Pendientes primero; dentro de cada estado, la más reciente primero.
+      operationId: listarSolicitudesPublicas
+      parameters:
+        - { name: estado, in: query, required: false, schema: { type: string, enum: [pendiente, convertida, descartada] } }
+      responses:
+        '200':
+          description: Solicitudes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, solicitudes]
+                properties:
+                  total: { type: integer, example: 2 }
+                  solicitudes: { type: array, items: { $ref: '#/components/schemas/SolicitudPublica' } }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /solicitudes-publicas/{id}:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Solicitudes web]
+      summary: Detalle de una solicitud del catálogo
+      operationId: obtenerSolicitudPublica
+      responses:
+        '200':
+          description: Solicitud
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SolicitudPublica' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /solicitudes-publicas/{id}/descartar:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Solicitudes web]
+      summary: Descartar una solicitud del catálogo
+      description: HU-09. Solo si está pendiente (409 si ya fue revisada). Guarda quién y cuándo la revisó.
+      operationId: descartarSolicitudPublica
+      responses:
+        '200':
+          description: Solicitud descartada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SolicitudPublica' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
@@ -847,6 +1032,43 @@ components:
         registrado_por: { type: [integer, 'null'] }
         creado_en: { type: string, format: date-time }
         actualizado_en: { type: string, format: date-time }
+
+    PerroPublico:
+      type: object
+      description: Datos que el catálogo público puede mostrar (sin estado interno ni quién lo registró).
+      required: [id, nombre, sexo, raza, tamano, tamano_nombre, edad_meses, fecha_nacimiento_estimada, fecha_ingreso]
+      properties:
+        id: { type: integer, example: 5 }
+        nombre: { type: string, example: Coco }
+        sexo: { $ref: '#/components/schemas/Sexo' }
+        raza: { type: string, example: Chihuahua }
+        tamano: { type: string, example: pequeno }
+        tamano_nombre: { type: string, example: Pequeño }
+        color: { type: [string, 'null'], example: Café claro }
+        foto_url: { type: [string, 'null'] }
+        edad_meses: { type: [integer, 'null'], example: 44 }
+        fecha_nacimiento_estimada: { type: boolean }
+        fecha_ingreso: { type: string, format: date }
+
+    SolicitudPublica:
+      type: object
+      required: [id, perro_id, perro_nombre, nombre_completo, telefono, estado, creado_en]
+      properties:
+        id: { type: integer }
+        perro_id: { type: integer }
+        perro_nombre: { type: string, example: Coco }
+        perro_foto_url: { type: [string, 'null'] }
+        perro_estado: { $ref: '#/components/schemas/EstadoPerro' }
+        nombre_completo: { type: string, example: Laura Quispe }
+        telefono: { type: string, example: '70012345' }
+        correo: { type: [string, 'null'] }
+        mensaje: { type: [string, 'null'] }
+        estado: { type: string, enum: [pendiente, convertida, descartada] }
+        solicitud_id: { type: [integer, 'null'], description: Adopción creada a partir de esta solicitud. }
+        revisado_por: { type: [integer, 'null'] }
+        revisado_por_nombre: { type: [string, 'null'] }
+        revisado_en: { type: [string, 'null'], format: date-time }
+        creado_en: { type: string, format: date-time }
 
     PerroDetalle:
       allOf:

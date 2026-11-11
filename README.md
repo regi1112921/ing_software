@@ -6,14 +6,15 @@ Sistema dividido en **tres capas independientes** y **cuatro servicios**:
 
 | Capa | Carpeta | Tecnología |
 |------|---------|------------|
-| Frontend | [`frontend/`](frontend/) | React + Vite |
+| Frontend | [`frontend/`](frontend/) | React + Vite (panel interno, con sesión) |
+| Catálogo público | [`catalogo/`](catalogo/) | React + Vite (sin sesión, para Vercel · HU-09) |
 | Backend | [`backend/`](backend/) | Node.js + Express (un servidor por servicio) |
 | Base de datos | [`database/`](database/) | PostgreSQL (scripts SQL) |
 
 | Servicio | Puerto | Responsabilidad |
 |----------|--------|-----------------|
 | Veterinaria | 3001 | Historial médico (atenciones) de cada perro |
-| Adopción | 3002 | Perros, catálogos, adoptantes y adopciones |
+| Adopción | 3002 | Perros, catálogos, adoptantes, adopciones y catálogo público (`/publico`) |
 | Dashboard | 3003 | Estadísticas e indicadores (solo lectura) |
 | Autenticación | 3004 | Inicio y cierre de sesión |
 
@@ -33,6 +34,7 @@ Sistema dividido en **tres capas independientes** y **cuatro servicios**:
 │       ├── veterinaria/      Servicio de veterinaria
 │       ├── adopcion/         Servicio de adopción
 │       └── dashboard/        Servicio de dashboard
+├── catalogo/                 SITIO PÚBLICO (HU-09): perros en adopción y solicitudes
 └── frontend/                 CAPA DE PRESENTACIÓN
     └── src/
         ├── api/              Un cliente HTTP por servicio
@@ -54,6 +56,7 @@ docker compose up --build
 ```
 
 Abre http://localhost:8080 e inicia sesión con `maria.alvarado@peluchin.test` / `huellas123`.
+El catálogo público queda en http://localhost:8082 (sin sesión).
 Guía completa (Docker y modo local): **[GUIA_EJECUCION.md](GUIA_EJECUCION.md)**.
 
 Cada equipo implementa su capa siguiendo la guía de su carpeta:

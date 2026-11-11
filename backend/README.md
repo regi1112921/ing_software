@@ -84,6 +84,8 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | Registrar atención médica | ✔ | ✔ | — |
 | Controles pendientes, registrar vacunas y desparasitaciones (HU-08) | ✔ | ✔ | — |
 | Adopciones (todas las rutas) | ✔ | — | ✔ |
+| Solicitudes web del catálogo (HU-09) | ✔ | — | ✔ |
+| Catálogo público `/publico/*` | sin sesión | sin sesión | sin sesión |
 
 - Sin permiso → `403`. El veterinario recibe la ficha del perro con `adopcion_vigente: null` (no ve datos del adoptante).
 - Los roles están en `ROLES` (`@huellas/shared`); los del módulo de adopciones en `services/adopcion/src/permisos.js`.
@@ -117,6 +119,27 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 | GET | `/adopciones/:id` | HU-11 · RF-16 | Detalle con `transiciones_permitidas` |
 | POST | `/adopciones` | HU-10 · RF-13/14/19 | `{ perro_id, adoptante: { nombre_completo, telefono, direccion, documento_identidad? }, fecha_solicitud?, observaciones? }` |
 | PATCH | `/adopciones/:id/estado` | HU-12 · RF-17/18/19/20 | `{ estado: aprobada\|rechazada\|finalizada, fecha?, observaciones? }` |
+
+### Catálogo público (HU-09) — servicio de Adopción, http://localhost:3002
+Rutas **sin sesión** que usa el sitio [`catalogo/`](../catalogo/README.md):
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/publico/filtros` | Tamaños, sexos y rangos de edad (`cachorro` < 12 meses, `joven` 12–35, `adulto` 36–95, `senior` ≥ 96) |
+| GET | `/publico/perros?tamano=&sexo=&edad=` | Solo perros `disponible` y solo datos públicos. Con filtro de edad no salen los de edad desconocida |
+| GET | `/publico/perros/:id` | Ficha; 404 si ya no está disponible |
+| POST | `/publico/solicitudes` | `{ perro_id, nombre_completo, telefono, correo?, mensaje? }` → pre-solicitud `pendiente` (201). Repetida por la misma persona → 409. Límite por IP (`SOLICITUDES_PUBLICAS_MAXIMO`, 5 por hora) → 429. `sitio_web` es un campo trampa: si llega con texto responde 201 sin guardar |
+
+Bandeja privada (administrador y responsable_adopciones):
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/solicitudes-publicas?estado=` | Pendientes primero |
+| GET | `/solicitudes-publicas/:id` | Detalle |
+| POST | `/solicitudes-publicas/:id/descartar` | Solo si está pendiente (409 si no) |
+
+Para convertirla, `POST /adopciones` acepta `solicitud_publica_id`: en la misma transacción la solicitud queda `convertida` y enlazada a la adopción.
+Variables: `TRUST_PROXY` (saltos de proxy, para leer la IP real) y `CORS_ORIGENES` con el dominio del catálogo.
 
 ### Veterinaria — http://localhost:3001
 | Método | Ruta | HU · RF | Descripción |
