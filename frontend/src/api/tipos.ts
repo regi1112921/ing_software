@@ -154,6 +154,54 @@ export interface CambioEstadoAdopcion {
   observaciones?: string | null
 }
 
+// ── Seguimiento después de la adopción (HU-10) ────────────────────────────────
+
+export type TipoSeguimiento = 'visita' | 'llamada'
+
+export interface Seguimiento {
+  id: number
+  solicitud_id: number
+  fecha: string
+  tipo: TipoSeguimiento
+  observaciones: string
+  // Marcado para revisarlo; se desmarca cuando el problema ya se revisó.
+  con_problemas: boolean
+  registrado_por: number
+  registrado_por_nombre: string
+  creado_en: string
+}
+
+export interface DatosSeguimiento {
+  fecha?: string
+  tipo: TipoSeguimiento
+  observaciones: string
+  con_problemas?: boolean
+}
+
+// Adopción finalizada sin seguimiento en los últimos N días.
+export interface AdopcionSinSeguimiento {
+  solicitud_id: number
+  perro_id: number
+  perro_nombre: string
+  perro_foto_url: string | null
+  adoptante_nombre: string
+  adoptante_telefono: string
+  fecha_adopcion: string
+  total_seguimientos: number
+  ultimo_seguimiento: string | null
+  seguimientos_con_problemas: number
+  // Desde el último seguimiento o, si no hay ninguno, desde la entrega.
+  dias_sin_seguimiento: number
+}
+
+export interface SeguimientoConProblemas extends Seguimiento {
+  perro_id: number
+  perro_nombre: string
+  perro_foto_url: string | null
+  adoptante_nombre: string
+  adoptante_telefono: string
+}
+
 // ── Veterinaria ──────────────────────────────────────────────────────────────
 
 export interface Veterinario {

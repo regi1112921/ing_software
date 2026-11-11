@@ -1,6 +1,10 @@
 import { http, query } from './http'
 import type {
   Adopcion,
+  AdopcionSinSeguimiento,
+  DatosSeguimiento,
+  Seguimiento,
+  SeguimientoConProblemas,
   Catalogos,
   CambioEstadoAdopcion,
   DatosAdopcion,
@@ -32,6 +36,23 @@ export const adopcionApi = {
   crearAdopcion: (datos: DatosAdopcion) => http<Adopcion>(`${BASE}/adopciones`, { method: 'POST', body: datos }),
   cambiarEstadoAdopcion: (id: number | string, cambio: CambioEstadoAdopcion) =>
     http<Adopcion>(`${BASE}/adopciones/${id}/estado`, { method: 'PATCH', body: cambio }),
+
+  // Seguimiento después de la adopción (HU-10)
+  listarSeguimientos: (adopcionId: number | string) =>
+    http<{ total: number; seguimientos: Seguimiento[] }>(`${BASE}/adopciones/${adopcionId}/seguimientos`),
+  registrarSeguimiento: (adopcionId: number | string, datos: DatosSeguimiento) =>
+    http<Seguimiento>(`${BASE}/adopciones/${adopcionId}/seguimientos`, { method: 'POST', body: datos }),
+  marcarProblemasSeguimiento: (adopcionId: number | string, seguimientoId: number, conProblemas: boolean) =>
+    http<Seguimiento>(`${BASE}/adopciones/${adopcionId}/seguimientos/${seguimientoId}`, {
+      method: 'PATCH',
+      body: { con_problemas: conProblemas },
+    }),
+  listarSinSeguimiento: (dias?: number) =>
+    http<{ dias: number; total: number; adopciones: AdopcionSinSeguimiento[] }>(
+      `${BASE}/seguimientos/pendientes${query({ dias: dias ? String(dias) : undefined })}`,
+    ),
+  listarSeguimientosConProblemas: () =>
+    http<{ total: number; seguimientos: SeguimientoConProblemas[] }>(`${BASE}/seguimientos/con-problemas`),
 
   // Solicitudes del catálogo público (HU-09)
   listarSolicitudesPublicas: (estado?: EstadoSolicitudPublica | '') =>

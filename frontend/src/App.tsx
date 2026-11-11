@@ -14,6 +14,7 @@ import AdopcionesPage from '@/modules/adopcion/pages/AdopcionesPage'
 import AdopcionFormPage from '@/modules/adopcion/pages/AdopcionFormPage'
 import AdopcionDetallePage from '@/modules/adopcion/pages/AdopcionDetallePage'
 import SolicitudesWebPage from '@/modules/adopcion/pages/SolicitudesWebPage'
+import SeguimientosPage from '@/modules/adopcion/pages/SeguimientosPage'
 import HistorialMedico from '@/modules/veterinaria/components/HistorialMedico'
 import AtencionFormPage from '@/modules/veterinaria/pages/AtencionFormPage'
 import ControlesPendientesPage from '@/modules/veterinaria/pages/ControlesPendientesPage'
@@ -57,6 +58,8 @@ export default function App() {
                 <Route path="adopciones/nueva" element={<AdopcionFormPage />} />
                 <Route path="adopciones/:id" element={<AdopcionDetallePage />} />
                 <Route path="solicitudes-web" element={<SolicitudesWebPage />} />
+                {/* HU-10 (sprint 2): seguimiento después de la adopción. */}
+                <Route path="seguimientos" element={<SeguimientosPage />} />
               </Route>
 
               <Route path="*" element={<NoEncontradoPage />} />
