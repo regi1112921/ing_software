@@ -158,4 +158,19 @@ join perros   p on p.nombre = v.perro
 join usuarios u on u.correo = v.veterinario
 left join consultas c on v.en_consulta and c.perro_id = p.id and c.fecha = v.aplicacion::date;
 
+-- -----------------------------------------------------------------------------
+-- Desparasitaciones (HU-08)
+-- -----------------------------------------------------------------------------
+insert into desparasitaciones (perro_id, veterinario_id, consulta_id, tipo, producto, fecha_aplicacion, fecha_proxima)
+select p.id, u.id, c.id, v.tipo, v.producto, v.aplicacion::date, v.proxima::date
+from (values
+  ('Luna',  'andres.ramirez@peluchin.test', true,  'interna', 'Praziquantel + pirantel', '2024-01-05', '2024-04-05'),
+  ('Luna',  'andres.ramirez@peluchin.test', true,  'externa', 'Fipronil (pipeta)',       '2024-01-05', '2024-02-05'),
+  ('Bella', 'lucia.torres@peluchin.test',   true,  'interna', 'Praziquantel + pirantel', '2024-02-10', '2024-05-10'),
+  ('Bella', 'lucia.torres@peluchin.test',   true,  'externa', 'Fipronil (pipeta)',       '2024-02-10', null)
+) as v(perro, veterinario, en_consulta, tipo, producto, aplicacion, proxima)
+join perros   p on p.nombre = v.perro
+join usuarios u on u.correo = v.veterinario
+left join consultas c on v.en_consulta and c.perro_id = p.id and c.fecha = v.aplicacion::date;
+
 commit;
