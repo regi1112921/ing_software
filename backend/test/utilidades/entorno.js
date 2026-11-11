@@ -45,7 +45,7 @@ export async function crearEntorno() {
   await pool.query("update usuarios set password_hash = $1 where rol <> 'administrador'", [hash])
   await pool.query(
     `insert into usuarios (nombre_completo, correo, rol, activo, password_hash)
-     values ('Usuario Inactivo', 'inactivo@peluchin.test', 'personal', false, $1)`,
+     values ('Usuario Inactivo', 'inactivo@peluchin.test', 'responsable_adopciones', false, $1)`,
     [hash],
   )
 

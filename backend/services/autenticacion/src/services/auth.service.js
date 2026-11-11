@@ -21,9 +21,9 @@ const esquemaRegistro = z.object({
     .max(72, 'La contraseña no puede superar 72 caracteres.'),
 })
 
-// Quien se registra solo entra como personal del albergue: los roles
+// Quien se registra solo entra como responsable de adopciones: los roles
 // administrador y veterinario no se pueden obtener desde el registro.
-const ROL_REGISTRO = 'personal'
+const ROL_REGISTRO = 'responsable_adopciones'
 
 const CREDENCIALES_INVALIDAS = 'Usuario o contraseña incorrectos.'
 
