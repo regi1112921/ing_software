@@ -53,7 +53,7 @@ paths:
     post:
       tags: [Autenticación]
       summary: Iniciar sesión
-      description: "HU-02 · RF-01. Credenciales incorrectas, usuario inactivo o sin contraseña → 401 con el mismo mensaje."
+      description: "HU-02 · RF-01 y HU-07. Credenciales incorrectas, usuario inactivo o sin contraseña → 401 con el mismo mensaje. En el 2.º intento fallido seguido el mensaje avisa que queda 1 intento; al 3.º la cuenta se bloquea 5 minutos (429). Un login correcto reinicia el contador."
       operationId: iniciarSesion
       security: []
       requestBody:
@@ -79,6 +79,12 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Error' }
               example: { error: Usuario o contraseña incorrectos. }
+        '429':
+          description: Cuenta bloqueada por intentos fallidos (HU-07). Mientras dura el bloqueo responde 429 aunque la contraseña sea correcta.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: 'Demasiados intentos fallidos. La cuenta está bloqueada; vuelve a intentarlo en 5 minutos.' }
 
   /auth/registro:
     servers: *srvAuth
@@ -283,6 +289,7 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/Adopcion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
     post:
       tags: [Adopciones]
       summary: Registrar adopción
@@ -320,6 +327,7 @@ paths:
               schema: { $ref: '#/components/schemas/AdopcionDetalle' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
         '409': { $ref: '#/components/responses/Conflicto' }
 
   /adopciones/{id}:
@@ -339,6 +347,7 @@ paths:
               schema: { $ref: '#/components/schemas/AdopcionDetalle' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
         '404': { $ref: '#/components/responses/NoEncontrado' }
 
   /adopciones/{id}/estado:
@@ -372,6 +381,7 @@ paths:
               schema: { $ref: '#/components/schemas/AdopcionDetalle' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
         '404': { $ref: '#/components/responses/NoEncontrado' }
         '409': { $ref: '#/components/responses/Conflicto' }
 
@@ -403,6 +413,7 @@ paths:
                         id: { type: integer, example: 2 }
                         nombre_completo: { type: string, example: Andrés Ramírez }
         '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
 
   /perros/{id}/historial:
     servers: *srvVet
@@ -429,6 +440,7 @@ paths:
                     items: { $ref: '#/components/schemas/Consulta' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
         '404': { $ref: '#/components/responses/NoEncontrado' }
 
   /consultas:
@@ -436,7 +448,7 @@ paths:
     post:
       tags: [Veterinaria]
       summary: Registrar atención médica
-      description: HU-09 · RF-12. El responsable debe ser un usuario activo con rol veterinario.
+      description: "HU-09 · RF-12. El responsable debe ser un usuario activo con rol veterinario. HU-07: solo administrador y veterinario pueden registrar (403 para responsable_adopciones)."
       operationId: registrarConsulta
       requestBody:
         required: true
@@ -461,6 +473,7 @@ paths:
               schema: { $ref: '#/components/schemas/Consulta' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
 
   # ───────────────────────── Dashboard ─────────────────────────
   /resumen:
@@ -594,7 +607,7 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
           example: { error: Debes iniciar sesión. }
     Prohibido:
-      description: El rol del usuario no tiene acceso (el Dashboard es solo para administrador)
+      description: "El rol del usuario no tiene acceso (HU-07). Dashboard: administrador. Adopciones: administrador y responsable_adopciones. Registrar atención: administrador y veterinario."
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -740,7 +753,7 @@ components:
           required: [adopcion_vigente]
           properties:
             adopcion_vigente:
-              description: Adopción en proceso o aprobada; `null` si no tiene.
+              description: "Adopción en proceso o aprobada; `null` si no tiene. HU-07: siempre `null` para el rol veterinario (trae datos del adoptante)."
               oneOf:
                 - $ref: '#/components/schemas/Adopcion'
                 - type: 'null'

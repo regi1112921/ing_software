@@ -68,10 +68,29 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 |--------|--------|
 | 400 | Datos inválidos o faltantes |
 | 401 | Sin sesión, sesión cerrada o credenciales incorrectas |
-| 403 | El rol del usuario no tiene acceso (el Dashboard es solo para `administrador`) |
+| 403 | El rol del usuario no tiene acceso al módulo o acción (ver *Permisos por rol*) |
 | 404 | El recurso no existe |
 | 409 | Regla de negocio (perro no disponible, transición no permitida, estado controlado por la adopción) |
+| 429 | Cuenta bloqueada por intentos de inicio de sesión fallidos |
 | 503 | El servicio de Autenticación no responde |
+
+## Permisos por rol (HU-07)
+
+| Módulo / acción | `administrador` | `veterinario` | `responsable_adopciones` |
+|-----------------|:---:|:---:|:---:|
+| Dashboard | ✔ | — | — |
+| Perros y catálogos (ver, registrar, editar) | ✔ | ✔ | ✔ |
+| Historial médico (consultar) | ✔ | ✔ | ✔ |
+| Registrar atención médica | ✔ | ✔ | — |
+| Adopciones (todas las rutas) | ✔ | — | ✔ |
+
+- Sin permiso → `403`. El veterinario recibe la ficha del perro con `adopcion_vigente: null` (no ve datos del adoptante).
+- Los roles están en `ROLES` (`@huellas/shared`); los del módulo de adopciones en `services/adopcion/src/permisos.js`.
+
+**Bloqueo por intentos fallidos:** tras `LOGIN_MAX_INTENTOS` (3) fallos seguidos, la cuenta queda bloqueada
+`LOGIN_MINUTOS_BLOQUEO` (5) minutos y el login responde `429`, aunque la contraseña sea correcta. En el penúltimo
+intento el mensaje avisa que queda 1. Un login correcto reinicia el contador, y `scripts/asignar-contrasena.js` desbloquea la cuenta.
+Los correos inexistentes y las cuentas desactivadas no se bloquean (mismo mensaje genérico).
 
 ## Endpoints
 
@@ -80,8 +99,8 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 ### Autenticación — http://localhost:3004
 | Método | Ruta | HU · RF | Descripción |
 |--------|------|---------|-------------|
-| POST | `/auth/login` | HU-02 · RF-01 | `{ correo, contrasena }` → `{ token, expira, usuario }` |
-| POST | `/auth/registro` | — | `{ nombre_completo, correo, contrasena }` → crea una cuenta con rol `personal` (201) y devuelve lo mismo que el login. Correo repetido → 409 |
+| POST | `/auth/login` | HU-02 · RF-01 · HU-07 | `{ correo, contrasena }` → `{ token, expira, usuario }`. Cuenta bloqueada → 429 |
+| POST | `/auth/registro` | — | `{ nombre_completo, correo, contrasena }` → crea una cuenta con rol `responsable_adopciones` (201) y devuelve lo mismo que el login. Correo repetido → 409 |
 | POST | `/auth/logout` | HU-03 · RF-02 | Cierra la sesión del token enviado (204) |
 | GET | `/auth/sesion` | — | Usuario de la sesión (nombre y rol para el menú) |
 
@@ -90,7 +109,7 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 |--------|------|---------|-------------|
 | GET | `/catalogos` | HU-04 | Razas activas, tamaños, estados del perro y de la adopción |
 | GET | `/perros?buscar=&estado=` | HU-06 · RF-07/08/09 | Listado; `buscar` por nombre o raza, `estado` por código |
-| GET | `/perros/:id` | HU-07 · RF-10 | Ficha con `adopcion_vigente` |
+| GET | `/perros/:id` | HU-07 · RF-10 | Ficha con `adopcion_vigente` (`null` para veterinario) |
 | POST | `/perros` | HU-04 · RF-05 | Registra. `fecha_nacimiento` **o** `edad_aproximada: { anios, meses }` |
 | PUT | `/perros/:id` | HU-05 · RF-06 | Edita. `estado` solo `disponible`/`en_tratamiento` y no si hay adopción |
 | GET | `/adopciones` | HU-11 · RF-15 | Listado, de la más reciente a la más antigua |
@@ -118,5 +137,5 @@ Todos los servicios exponen `GET /health`.
 
 ## Fuera de alcance (sin RF en el SRS)
 
-Permisos por rol (salvo el Dashboard, solo para administración), bloqueo por intentos fallidos, vacunas, gestión de usuarios y subida de fotos
+Vacunas, gestión de usuarios y subida de fotos
 (la foto se guarda como URL).
