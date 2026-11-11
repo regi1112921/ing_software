@@ -38,6 +38,8 @@ tags:
     description: "Servicio de Adopción, puerto 3002 · HU-09. Sin sesión: lo usa el sitio público (Vercel)."
   - name: Solicitudes web
     description: "Servicio de Adopción, puerto 3002 · HU-09. Bandeja privada de las solicitudes del catálogo (administrador y responsable_adopciones)."
+  - name: Seguimientos
+    description: "Servicio de Adopción, puerto 3002 · HU-10 (seguimiento después de la adopción). Administrador y responsable_adopciones."
   - name: Veterinaria
     description: "Puerto 3001 · HU-08, HU-09"
   - name: Dashboard
@@ -391,6 +393,163 @@ paths:
         '403': { $ref: '#/components/responses/Prohibido' }
         '404': { $ref: '#/components/responses/NoEncontrado' }
         '409': { $ref: '#/components/responses/Conflicto' }
+
+  # ───────────────────────── Adopción · seguimientos (HU-10) ─────────────────────────
+  /adopciones/{id}/seguimientos:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Seguimientos]
+      summary: Seguimientos de una adopción
+      description: HU-10 · seguimiento. Visitas y llamadas de la adopción, de la más reciente a la más antigua.
+      operationId: listarSeguimientos
+      responses:
+        '200':
+          description: Seguimientos
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, seguimientos]
+                properties:
+                  total: { type: integer, example: 3 }
+                  seguimientos:
+                    type: array
+                    items: { $ref: '#/components/schemas/Seguimiento' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    post:
+      tags: [Seguimientos]
+      summary: Registrar un seguimiento
+      description: |
+        HU-10 · seguimiento. Solo en adopciones `finalizada` (perro entregado); si no, 409.
+        La fecha no puede ser anterior a la entrega ni futura. `con_problemas: true` lo deja marcado para revisarlo.
+      operationId: registrarSeguimiento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, observaciones]
+              properties:
+                tipo: { type: string, enum: [visita, llamada] }
+                observaciones: { type: string, maxLength: 2000 }
+                fecha: { type: string, format: date, description: Hoy si no se indica. }
+                con_problemas: { type: boolean, default: false }
+            example: { tipo: visita, observaciones: Rocky está bien y el patio está cercado., con_problemas: false }
+      responses:
+        '201':
+          description: Seguimiento registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Seguimiento' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /adopciones/{id}/seguimientos/{seguimientoId}:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+      - name: seguimientoId
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    patch:
+      tags: [Seguimientos]
+      summary: Marcar o desmarcar "con problemas"
+      description: HU-10 · seguimiento. `true` lo marca para revisarlo; `false` indica que ya se revisó. 404 si el seguimiento no es de esa adopción.
+      operationId: marcarProblemasSeguimiento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [con_problemas]
+              properties:
+                con_problemas: { type: boolean }
+            example: { con_problemas: true }
+      responses:
+        '200':
+          description: Seguimiento actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Seguimiento' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /seguimientos/pendientes:
+    servers: *srvAdopcion
+    get:
+      tags: [Seguimientos]
+      summary: Adopciones sin seguimiento reciente
+      description: >-
+        HU-10 · seguimiento. Adopciones finalizadas sin seguimiento en los últimos `dias` días. Si nunca tuvieron
+        uno, los días se cuentan desde la entrega. Ordenadas de la que lleva más días sin seguimiento a la que menos.
+      operationId: adopcionesSinSeguimiento
+      parameters:
+        - name: dias
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 365, default: 30 }
+      responses:
+        '200':
+          description: Adopciones sin seguimiento
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [dias, total, adopciones]
+                properties:
+                  dias: { type: integer, example: 30 }
+                  total: { type: integer, example: 1 }
+                  adopciones:
+                    type: array
+                    items: { $ref: '#/components/schemas/AdopcionSinSeguimiento' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /seguimientos/con-problemas:
+    servers: *srvAdopcion
+    get:
+      tags: [Seguimientos]
+      summary: Seguimientos con problemas por revisar
+      description: HU-10 · seguimiento. Seguimientos marcados `con_problemas`, con perro y adoptante, del más reciente al más antiguo.
+      operationId: seguimientosConProblemas
+      responses:
+        '200':
+          description: Seguimientos con problemas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, seguimientos]
+                properties:
+                  total: { type: integer, example: 1 }
+                  seguimientos:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Seguimiento'
+                        - type: object
+                          properties:
+                            perro_id: { type: integer }
+                            perro_nombre: { type: string, example: Rocky }
+                            perro_foto_url: { type: [string, 'null'] }
+                            adoptante_nombre: { type: string, example: Ana García López }
+                            adoptante_telefono: { type: string, example: '76543210' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
 
   # ───────────────────────── Adopción · catálogo público (HU-09) ─────────────────────────
   /publico/filtros:
@@ -1177,6 +1336,37 @@ components:
         veterinario_id: { type: integer }
         veterinario_nombre: { type: string, example: Lucía Torres }
         creado_en: { type: string, format: date-time }
+
+    Seguimiento:
+      type: object
+      required: [id, solicitud_id, fecha, tipo, observaciones, con_problemas, registrado_por, registrado_por_nombre]
+      properties:
+        id: { type: integer }
+        solicitud_id: { type: integer, description: id de la adopción. }
+        fecha: { type: string, format: date }
+        tipo: { type: string, enum: [visita, llamada] }
+        observaciones: { type: string, example: Rocky cojea de la pata trasera. }
+        con_problemas: { type: boolean, description: Marcado para revisarlo. }
+        registrado_por: { type: integer }
+        registrado_por_nombre: { type: string, example: María Alvarado }
+        creado_en: { type: string, format: date-time }
+        actualizado_en: { type: string, format: date-time }
+
+    AdopcionSinSeguimiento:
+      type: object
+      required: [solicitud_id, perro_id, perro_nombre, adoptante_nombre, adoptante_telefono, fecha_adopcion, total_seguimientos, ultimo_seguimiento, seguimientos_con_problemas, dias_sin_seguimiento]
+      properties:
+        solicitud_id: { type: integer }
+        perro_id: { type: integer }
+        perro_nombre: { type: string, example: Rocky }
+        perro_foto_url: { type: [string, 'null'] }
+        adoptante_nombre: { type: string, example: Ana García López }
+        adoptante_telefono: { type: string, example: '76543210' }
+        fecha_adopcion: { type: string, format: date }
+        total_seguimientos: { type: integer, example: 3 }
+        ultimo_seguimiento: { type: [string, 'null'], format: date }
+        seguimientos_con_problemas: { type: integer, example: 1 }
+        dias_sin_seguimiento: { type: integer, example: 45, description: 'Desde el último seguimiento o, si no hay ninguno, desde la entrega.' }
 
     ControlPendiente:
       type: object
