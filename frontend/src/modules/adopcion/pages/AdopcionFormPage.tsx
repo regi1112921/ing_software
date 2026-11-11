@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { LoaderCircle, PawPrint } from 'lucide-react'
 import { adopcionApi } from '@/api/adopcion.api'
@@ -15,15 +15,26 @@ import { BOTON_PRIMARIO, BOTON_SECUNDARIO, CLASE_INPUT, CLASE_SELECT, CLASE_TEXT
 import { NOMBRE_SEXO, formatearEdad, hoy } from '@/shared/utils/formato'
 
 // HU-10 · Registrar adopción. Solo perros disponibles; desde la ficha llega
-// con el perro preseleccionado (?perro=<id>).
+// con el perro preseleccionado (?perro=<id>). HU-09: desde una solicitud del
+// catálogo público llega con ?solicitud_web=<id> y se prellenan el perro y el contacto.
 export default function AdopcionFormPage() {
   const navegar = useNavigate()
   const [parametros] = useSearchParams()
-  const perroPreseleccionado = parametros.get('perro')
-  const volverA = perroPreseleccionado ? `/perros/${perroPreseleccionado}?pestana=adopcion` : '/adopciones'
-
-  const { datos, error, recargar } = useCarga(() => adopcionApi.listarPerros({ estado: 'disponible' }))
-  const disponibles = datos?.perros ?? []
+  const solicitudWebId = parametros.get('solicitud_web')
+  const { datos, error, recargar } = useCarga(() =>
+    Promise.all([
+      adopcionApi.listarPerros({ estado: 'disponible' }),
+      solicitudWebId ? adopcionApi.obtenerSolicitudPublica(solicitudWebId) : Promise.resolve(null),
+    ]),
+  )
+  const disponibles = datos?.[0].perros ?? []
+  const solicitudWeb = datos?.[1] ?? null
+  const perroPreseleccionado = parametros.get('perro') ?? (solicitudWeb ? String(solicitudWeb.perro_id) : null)
+  const volverA = solicitudWebId
+    ? '/solicitudes-web'
+    : perroPreseleccionado
+      ? `/perros/${perroPreseleccionado}?pestana=adopcion`
+      : '/adopciones'
 
   const [form, setForm] = useState({
     perro_id: perroPreseleccionado ?? '',
@@ -37,6 +48,18 @@ export default function AdopcionFormPage() {
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
+
+  // Prellena con los datos que la persona dejó en el catálogo (una sola vez).
+  useEffect(() => {
+    if (!solicitudWeb) return
+    setForm((f) => ({
+      ...f,
+      perro_id: String(solicitudWeb.perro_id),
+      nombre_completo: f.nombre_completo || solicitudWeb.nombre_completo,
+      telefono: f.telefono || solicitudWeb.telefono,
+      observaciones: f.observaciones || (solicitudWeb.mensaje ? `Mensaje en la solicitud web: ${solicitudWeb.mensaje}` : ''),
+    }))
+  }, [solicitudWeb])
 
   const perroElegido = disponibles.find((p) => String(p.id) === form.perro_id)
   const preseleccionNoDisponible = Boolean(datos && perroPreseleccionado && !perroElegido)
@@ -62,6 +85,7 @@ export default function AdopcionFormPage() {
         },
         fecha_solicitud: form.fecha_solicitud,
         observaciones: form.observaciones.trim() || null,
+        solicitud_publica_id: solicitudWeb && solicitudWeb.estado === 'pendiente' ? solicitudWeb.id : null,
       })
       navegar(`/adopciones/${adopcion.id}`, {
         replace: true,
@@ -107,6 +131,13 @@ export default function AdopcionFormPage() {
         {datos && disponibles.length > 0 && (
           <form onSubmit={enviar} className="max-w-3xl space-y-5" noValidate>
             {errorGeneral && <MensajeError mensaje={errorGeneral} />}
+            {solicitudWeb && (
+              <p className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                {solicitudWeb.estado === 'pendiente'
+                  ? `Desde la solicitud web de ${solicitudWeb.nombre_completo}. Completa la dirección y revisa los datos; al registrar, la solicitud quedará como convertida.`
+                  : 'Esta solicitud web ya fue revisada; la adopción se registrará sin enlazarla.'}
+              </p>
+            )}
             {preseleccionNoDisponible && (
               <MensajeError mensaje="El perro seleccionado ya no está disponible para adopción. Elige otro de la lista." />
             )}
