@@ -8,7 +8,7 @@ import MensajeError from '@/shared/components/MensajeError'
 import { BOTON_PRIMARIO, CLASE_INPUT } from '@/shared/utils/estilos'
 import MarcoAcceso from '../components/MarcoAcceso'
 
-// Crear cuenta. Siempre como personal del albergue; al terminar queda la sesión iniciada.
+// Crear cuenta. Siempre como responsable de adopciones; al terminar queda la sesión iniciada.
 export default function RegistroPage() {
   const { usuario, registrarse } = useSesion()
   const navegar = useNavigate()
@@ -37,7 +37,7 @@ export default function RegistroPage() {
     setEnviando(true)
     try {
       await registrarse({ nombre_completo: form.nombre_completo.trim(), correo: form.correo.trim(), contrasena: form.contrasena })
-      // El personal empieza en Perros (no ve el dashboard).
+      // El responsable de adopciones empieza en Perros (no ve el dashboard).
       navegar('/perros', { replace: true, state: { aviso: '¡Cuenta creada! Ya puedes usar el sistema.' } })
     } catch (err) {
       setEnviando(false)
@@ -53,7 +53,7 @@ export default function RegistroPage() {
   const completo = form.nombre_completo && form.correo && form.contrasena && form.confirmacion
 
   return (
-    <MarcoAcceso titulo="Crear cuenta" subtitulo="Regístrate como personal del albergue para iniciar sesión.">
+    <MarcoAcceso titulo="Crear cuenta" subtitulo="Regístrate como responsable de adopciones para iniciar sesión.">
       <form onSubmit={enviar} className="space-y-4" noValidate>
         {errorGeneral && <MensajeError mensaje={errorGeneral} />}
         <Campo etiqueta="Nombre completo" obligatorio error={errores.nombre_completo}>

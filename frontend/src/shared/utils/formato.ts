@@ -42,5 +42,5 @@ export const NOMBRE_SEXO: Record<Sexo, string> = { macho: 'Macho', hembra: 'Hemb
 export const NOMBRE_ROL: Record<Rol, string> = {
   administrador: 'Administración',
   veterinario: 'Veterinaria',
-  personal: 'Personal del albergue',
+  responsable_adopciones: 'Responsable de adopciones',
 }
