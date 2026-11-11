@@ -17,7 +17,7 @@ describe('Servicio de Autenticación', () => {
       assert.equal(respuesta.status, 200)
       assert.ok(respuesta.body.token.length >= 40)
       assert.equal(respuesta.body.usuario.correo, PERSONAL)
-      assert.equal(respuesta.body.usuario.rol, 'personal')
+      assert.equal(respuesta.body.usuario.rol, 'responsable_adopciones')
       assert.equal(respuesta.body.usuario.password_hash, undefined)
     })
 
@@ -87,7 +87,7 @@ describe('Servicio de Autenticación', () => {
       const respuesta = await entorno.api('autenticacion', token).get('/auth/sesion')
       assert.equal(respuesta.status, 200)
       assert.equal(respuesta.body.usuario.nombre_completo, 'María Alvarado')
-      assert.equal(respuesta.body.usuario.rol, 'personal')
+      assert.equal(respuesta.body.usuario.rol, 'responsable_adopciones')
     })
   })
 
@@ -101,7 +101,7 @@ describe('Servicio de Autenticación', () => {
       assert.ok(respuesta.body.token.length >= 40)
       assert.deepEqual(
         { ...respuesta.body.usuario, id: undefined },
-        { id: undefined, nombre_completo: 'Sofía Quispe', correo: 'sofia.quispe@peluchin.test', rol: 'personal' },
+        { id: undefined, nombre_completo: 'Sofía Quispe', correo: 'sofia.quispe@peluchin.test', rol: 'responsable_adopciones' },
       )
 
       const sesion = await request(entorno.apps.autenticacion).get('/auth/sesion').set('authorization', `Bearer ${respuesta.body.token}`)
@@ -116,7 +116,7 @@ describe('Servicio de Autenticación', () => {
     it('no deja elegir el rol: siempre crea personal', async () => {
       const respuesta = await registro({ ...datos, correo: 'intruso@peluchin.test', rol: 'administrador' })
       assert.equal(respuesta.status, 201)
-      assert.equal(respuesta.body.usuario.rol, 'personal')
+      assert.equal(respuesta.body.usuario.rol, 'responsable_adopciones')
     })
 
     it('un correo ya registrado responde 409 en el campo correo', async () => {

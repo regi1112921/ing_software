@@ -61,7 +61,7 @@ as $$ select id from razas where nombre = 'Mestizo' $$;
 -- -----------------------------------------------------------------------------
 with u as (
   insert into usuarios (nombre_completo, correo, rol) values
-    ('Prueba Personal',    'prueba.personal@peluchin.test',    'personal'),
+    ('Prueba Personal',    'prueba.personal@peluchin.test',    'responsable_adopciones'),
     ('Prueba Veterinaria', 'prueba.veterinaria@peluchin.test', 'veterinario')
   returning id, rol
 )
@@ -111,14 +111,14 @@ select pg_temp.esperar_error('catálogos: no se puede borrar una raza en uso', '
 select pg_temp.esperar_error('usuarios: rechaza un rol desconocido', '23514',
   $q$ insert into usuarios (nombre_completo, correo, rol) values ('X', 'x1@peluchin.test', 'jefe') $q$);
 select pg_temp.esperar_error('usuarios: rechaza correo con mayúsculas', '23514',
-  $q$ insert into usuarios (nombre_completo, correo, rol) values ('X', 'X2@Peluchin.test', 'personal') $q$);
+  $q$ insert into usuarios (nombre_completo, correo, rol) values ('X', 'X2@Peluchin.test', 'responsable_adopciones') $q$);
 select pg_temp.esperar_error('usuarios: rechaza correo duplicado', '23505',
-  $q$ insert into usuarios (nombre_completo, correo, rol) values ('X', 'prueba.personal@peluchin.test', 'personal') $q$);
+  $q$ insert into usuarios (nombre_completo, correo, rol) values ('X', 'prueba.personal@peluchin.test', 'responsable_adopciones') $q$);
 select pg_temp.esperar_error('usuarios: rechaza contraseña en texto plano', '23514',
-  $q$ insert into usuarios (nombre_completo, correo, rol, password_hash) values ('X', 'x3@peluchin.test', 'personal', 'clave123') $q$);
+  $q$ insert into usuarios (nombre_completo, correo, rol, password_hash) values ('X', 'x3@peluchin.test', 'responsable_adopciones', 'clave123') $q$);
 with r as (
   insert into usuarios (nombre_completo, correo, rol, password_hash)
-  values ('X', 'x4@peluchin.test', 'personal', '$2b$10$' || repeat('a', 53))
+  values ('X', 'x4@peluchin.test', 'responsable_adopciones', '$2b$10$' || repeat('a', 53))
   returning 1
 )
 select pg_temp.verificar('usuarios: acepta un hash bcrypt', (select count(*) = 1 from r));

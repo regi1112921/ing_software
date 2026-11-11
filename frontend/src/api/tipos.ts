@@ -4,7 +4,7 @@
 export type Sexo = 'macho' | 'hembra'
 export type EstadoPerro = 'disponible' | 'en_tratamiento' | 'en_adopcion' | 'adoptado'
 export type EstadoAdopcion = 'en_proceso' | 'aprobada' | 'rechazada' | 'finalizada'
-export type Rol = 'administrador' | 'veterinario' | 'personal'
+export type Rol = 'administrador' | 'veterinario' | 'responsable_adopciones'
 
 // ── Autenticación ────────────────────────────────────────────────────────────
 
@@ -15,7 +15,7 @@ export interface Usuario {
   rol: Rol
 }
 
-// La cuenta se crea siempre con rol personal.
+// La cuenta se crea siempre con rol responsable_adopciones.
 export interface DatosRegistro {
   nombre_completo: string
   correo: string

@@ -12,7 +12,7 @@ info:
     **Convenciones:** JSON con campos en `snake_case` (iguales a las columnas de la BD) y fechas `AAAA-MM-DD`.
     Los errores responden `{ "error": "mensaje" }` y, si son de validación, también `detalles` por campo.
 
-    Usuarios de prueba (Docker, contraseña `huellas123`): `maria.alvarado@peluchin.test` (personal),
+    Usuarios de prueba (Docker, contraseña `huellas123`): `maria.alvarado@peluchin.test` (responsable_adopciones),
     `andres.ramirez@peluchin.test` (veterinario) y `admin@peluchin.test` (administrador, el único que ve el Dashboard).
   contact:
     name: Equipo HUELLAS · SIS-213 Ingeniería del Software (UCB)
@@ -84,8 +84,8 @@ paths:
     servers: *srvAuth
     post:
       tags: [Autenticación]
-      summary: Crear cuenta (rol personal)
-      description: Crea una cuenta siempre con rol `personal` y deja la sesión iniciada (misma respuesta que el login).
+      summary: Crear cuenta (rol responsable_adopciones)
+      description: Crea una cuenta siempre con rol `responsable_adopciones` y deja la sesión iniciada (misma respuesta que el login).
       operationId: registrarse
       security: []
       requestBody:
@@ -629,7 +629,7 @@ components:
 
     Rol:
       type: string
-      enum: [administrador, veterinario, personal]
+      enum: [administrador, veterinario, responsable_adopciones]
     Sexo:
       type: string
       enum: [macho, hembra]

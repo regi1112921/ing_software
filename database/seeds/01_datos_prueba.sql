@@ -27,7 +27,7 @@ insert into usuarios (nombre_completo, correo, rol) values
   ('Patricia Gómez',  'admin@peluchin.test',          'administrador'),
   ('Andrés Ramírez',  'andres.ramirez@peluchin.test', 'veterinario'),
   ('Lucía Torres',    'lucia.torres@peluchin.test',   'veterinario'),
-  ('María Alvarado',  'maria.alvarado@peluchin.test', 'personal');
+  ('María Alvarado',  'maria.alvarado@peluchin.test', 'responsable_adopciones');
 
 -- -----------------------------------------------------------------------------
 -- Perros (ingresan como disponibles o en tratamiento; los estados de adopción

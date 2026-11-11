@@ -20,6 +20,7 @@ alter table usuarios             enable row level security;
 alter table perros               enable row level security;
 alter table adoptantes           enable row level security;
 alter table solicitudes_adopcion enable row level security;
+alter table solicitudes_publicas enable row level security;
 alter table consultas            enable row level security;
 alter table vacunas              enable row level security;
 
@@ -42,7 +43,7 @@ begin
     if exists (select 1 from pg_roles where rolname = v_rol) then
       execute format(
         'revoke all on tamanos, estados_perro, estados_solicitud, razas, usuarios, perros, adoptantes, '
-        'solicitudes_adopcion, consultas, vacunas, v_perros from %I', v_rol);
+        'solicitudes_adopcion, solicitudes_publicas, consultas, vacunas, v_perros from %I', v_rol);
       execute format('revoke all on all sequences in schema public from %I', v_rol);
       execute format(
         'revoke execute on function fn_actualizar_timestamp(), fn_validar_solicitud(), fn_sincronizar_estado_perro(), '
