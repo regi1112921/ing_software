@@ -11,7 +11,9 @@ create table usuarios (
   password_hash   text,
   rol             text        not null,
   activo          boolean     not null default true,
-  creado_en       timestamptz not null default now(),
+  intentos_fallidos int       not null default 0,
+  bloqueado_hasta timestamptz,
+  creado_en      timestamptz not null default now(),
   actualizado_en  timestamptz not null default now(),
 
   constraint uq_usuarios_correo unique (correo),
@@ -25,12 +27,15 @@ create table usuarios (
   constraint ck_usuarios_password_hash check (
     password_hash is null or password_hash ~ '^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$'
   ),
-  constraint ck_usuarios_rol check (rol in ('administrador', 'veterinario', 'personal'))
+  constraint ck_usuarios_rol check (rol in ('administrador', 'veterinario', 'responsable_adopciones')),
+  constraint ck_usuarios_intentos check (intentos_fallidos >= 0)
 );
 
-comment on table  usuarios is 'Personas que usan el sistema (administración, veterinaria y personal del albergue).';
+comment on table  usuarios is 'Personas que usan el sistema (administración, veterinaria y responsables de adopciones).';
 comment on column usuarios.password_hash is 'Hash bcrypt generado por el backend. NULL = sin contraseña, no puede iniciar sesión.';
 comment on column usuarios.activo is 'Las cuentas se desactivan en lugar de borrarse, para conservar la trazabilidad.';
+comment on column usuarios.intentos_fallidos is 'Intentos de login fallidos seguidos. Vuelve a 0 al iniciar sesión correctamente.';
+comment on column usuarios.bloqueado_hasta  is 'Si es futura, la cuenta no puede iniciar sesión hasta esa hora (3 intentos fallidos).';
 
 create trigger trg_usuarios_actualizado_en
   before update on usuarios

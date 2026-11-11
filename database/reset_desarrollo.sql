@@ -9,7 +9,7 @@
 begin;
 
 drop view  if exists v_perros;
-drop table if exists vacunas, consultas, solicitudes_adopcion, adoptantes, perros, usuarios,
+drop table if exists vacunas, consultas, solicitudes_publicas, solicitudes_adopcion, adoptantes, perros, usuarios,
   razas, estados_solicitud, estados_perro, tamanos;
 drop function if exists
   fn_edad_en_meses(date, date),

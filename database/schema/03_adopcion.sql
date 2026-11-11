@@ -243,3 +243,50 @@ $$;
 create trigger trg_perros_validar_estado
   before insert or update of estado on perros
   for each row execute function fn_validar_estado_perro();
+
+-- -----------------------------------------------------------------------------
+-- solicitudes_publicas
+-- Pre-solicitudes enviadas desde el catálogo público (sin cuenta). El responsable
+-- de adopciones las revisa y las convierte en una solicitud_adopcion o las descarta.
+-- Van aparte para que un visitante no bloquee al perro (uq_solicitudes_activa_por_perro)
+-- ni cree adoptantes sin revisión.
+-- -----------------------------------------------------------------------------
+create table solicitudes_publicas (
+  id              bigint generated always as identity primary key,
+  perro_id        bigint      not null references perros (id),
+  nombre_completo text        not null,
+  telefono        text        not null,
+  correo          text,
+  mensaje         text,
+  estado          text        not null default 'pendiente',
+  solicitud_id    bigint      references solicitudes_adopcion (id),
+  revisado_por    bigint      references usuarios (id),
+  revisado_en     timestamptz,
+  creado_en       timestamptz not null default now(),
+  actualizado_en  timestamptz not null default now(),
+
+  constraint ck_solpub_nombre   check (btrim(nombre_completo) <> ''),
+  constraint ck_solpub_telefono check (telefono ~ '^\+?[0-9]{7,15}$'),
+  constraint ck_solpub_correo   check (
+    correo is null or (correo = lower(btrim(correo)) and correo ~ '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$')
+  ),
+  constraint ck_solpub_mensaje  check (mensaje is null or length(mensaje) <= 1000),
+  constraint ck_solpub_estado   check (estado in ('pendiente', 'convertida', 'descartada')),
+  -- Convertida ⇔ enlazada a la solicitud formal; revisada ⇔ tiene quién y cuándo.
+  constraint ck_solpub_conversion check ((estado = 'convertida') = (solicitud_id is not null)),
+  constraint ck_solpub_revision   check (
+    (estado = 'pendiente' and revisado_por is null and revisado_en is null)
+    or (estado <> 'pendiente' and revisado_por is not null and revisado_en is not null)
+  )
+);
+
+comment on table  solicitudes_publicas is 'Pre-solicitudes enviadas desde el catálogo público. El responsable de adopciones las revisa y las convierte en una solicitud_adopcion o las descarta.';
+comment on column solicitudes_publicas.solicitud_id is 'Solicitud formal creada a partir de esta pre-solicitud (solo si estado = convertida).';
+
+create index ix_solpub_estado on solicitudes_publicas (estado, creado_en desc);
+create index ix_solpub_perro  on solicitudes_publicas (perro_id);
+create unique index uq_solpub_solicitud on solicitudes_publicas (solicitud_id) where solicitud_id is not null;
+
+create trigger trg_solicitudes_publicas_actualizado_en
+  before update on solicitudes_publicas
+  for each row execute function fn_actualizar_timestamp();
