@@ -35,6 +35,8 @@ const esquemaCrear = z.object({
   ),
   fecha_solicitud: campos.fecha('La fecha de solicitud').default(() => hoy()),
   observaciones: campos.textoOpcional('Las observaciones', 2000),
+  // HU-09: si la adopción nace de una solicitud del catálogo público, queda enlazada a ella.
+  solicitud_publica_id: campos.id('La solicitud web').nullish(),
 })
 
 const esquemaCambioEstado = z.object({
@@ -47,7 +49,7 @@ const esquemaCambioEstado = z.object({
 
 const conTransiciones = (adopcion) => ({ ...adopcion, transiciones_permitidas: TRANSICIONES[adopcion.estado] })
 
-export function crearAdopcionesService({ pool, adopciones, adoptantes, perros }) {
+export function crearAdopcionesService({ pool, adopciones, adoptantes, perros, solicitudesPublicas }) {
   async function obtener(idCrudo) {
     const id = validar(campos.id('La adopción'), idCrudo)
     const adopcion = await adopciones.obtener(id)
@@ -79,13 +81,28 @@ export function crearAdopcionesService({ pool, adopciones, adoptantes, perros })
         const existente = documento ? await adoptantes.buscarPorDocumento(cliente, documento) : null
         const adoptanteId = existente?.id ?? (await adoptantes.crear(cliente, solicitud.adoptante, usuario.id))
 
+        // HU-09: la solicitud web debe seguir pendiente y ser del mismo perro.
+        if (solicitud.solicitud_publica_id) {
+          const web = await solicitudesPublicas.obtenerParaActualizar(cliente, solicitud.solicitud_publica_id)
+          if (!web) throw solicitudInvalida('Datos inválidos.', [{ campo: 'solicitud_publica_id', mensaje: 'La solicitud web no existe.' }])
+          if (web.estado !== 'pendiente') throw conflicto('La solicitud web ya fue revisada.')
+          if (web.perro_id !== solicitud.perro_id) {
+            throw solicitudInvalida('Datos inválidos.', [{ campo: 'perro_id', mensaje: 'La solicitud web es para otro perro.' }])
+          }
+        }
+
         // El trigger de la BD pasa el perro a "en_adopcion" en esta misma transacción.
-        return adopciones.crear(cliente, {
+        const adopcionId = await adopciones.crear(cliente, {
           perro_id: solicitud.perro_id,
           adoptante_id: adoptanteId,
           fecha_solicitud: solicitud.fecha_solicitud,
           observaciones: solicitud.observaciones,
         }, usuario.id)
+
+        if (solicitud.solicitud_publica_id) {
+          await solicitudesPublicas.convertir(cliente, solicitud.solicitud_publica_id, adopcionId, usuario.id)
+        }
+        return adopcionId
       })
 
       return obtener(id)

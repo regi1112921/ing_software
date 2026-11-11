@@ -59,3 +59,17 @@ export function bloqueoLogin() {
     minutosBloqueo: entero('LOGIN_MINUTOS_BLOQUEO', 5),
   }
 }
+
+// Saltos de proxy de confianza (nginx, Vercel, Render…) para que req.ip sea la IP real
+// del visitante. 0 = conexión directa. Lo usa el límite de solicitudes del catálogo (HU-09).
+export function saltosProxy() {
+  return entero('TRUST_PROXY', 0)
+}
+
+// HU-09: solicitudes del catálogo público por IP y ventana de tiempo.
+export function limiteSolicitudesPublicas() {
+  return {
+    maximo: entero('SOLICITUDES_PUBLICAS_MAXIMO', 5),
+    ventanaMs: entero('SOLICITUDES_PUBLICAS_VENTANA_MINUTOS', 60) * 60 * 1000,
+  }
+}

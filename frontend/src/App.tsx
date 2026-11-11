@@ -13,6 +13,7 @@ import PerroDetallePage from '@/modules/adopcion/pages/PerroDetallePage'
 import AdopcionesPage from '@/modules/adopcion/pages/AdopcionesPage'
 import AdopcionFormPage from '@/modules/adopcion/pages/AdopcionFormPage'
 import AdopcionDetallePage from '@/modules/adopcion/pages/AdopcionDetallePage'
+import SolicitudesWebPage from '@/modules/adopcion/pages/SolicitudesWebPage'
 import HistorialMedico from '@/modules/veterinaria/components/HistorialMedico'
 import AtencionFormPage from '@/modules/veterinaria/pages/AtencionFormPage'
 import ControlesPendientesPage from '@/modules/veterinaria/pages/ControlesPendientesPage'
@@ -55,6 +56,7 @@ export default function App() {
                 <Route path="adopciones" element={<AdopcionesPage />} />
                 <Route path="adopciones/nueva" element={<AdopcionFormPage />} />
                 <Route path="adopciones/:id" element={<AdopcionDetallePage />} />
+                <Route path="solicitudes-web" element={<SolicitudesWebPage />} />
               </Route>
 
               <Route path="*" element={<NoEncontradoPage />} />

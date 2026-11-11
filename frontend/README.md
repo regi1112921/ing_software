@@ -129,6 +129,7 @@ abierta, la app vuelve al inicio de sesión con el aviso "Tu sesión expiró".
 | `/perros/:id/atenciones/nueva` | Registrar atención médica (administración y veterinaria) | HU-09 |
 | `/controles` | Controles pendientes: vacunas y desparasitaciones vencidas (resaltadas) o próximas, con rango de 7, 30, 60 o 90 días (administración y veterinaria) | HU-08 |
 | `/perros/:id/controles/nuevo` | Registrar vacuna o desparasitación; desde `/controles` llega con el control elegido y al guardar vuelve a la lista | HU-08 |
+| `/solicitudes-web` | Solicitudes del catálogo público: contactar, **Iniciar adopción** (abre el registro prellenado y la marca como convertida) o **Descartar** (administración y responsables de adopciones) | HU-09 |
 | `/adopciones` | Listado de adopciones con filtro por estado (administración y responsables de adopciones; también `/adopciones/*`) | HU-11 |
 | `/adopciones/nueva` | Registrar adopción (`?perro=<id>` lo preselecciona) | HU-10 |
 | `/adopciones/:id` | Detalle y cambio de estado | HU-11, HU-12 |

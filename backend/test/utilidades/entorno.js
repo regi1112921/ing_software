@@ -61,7 +61,8 @@ export async function crearEntorno() {
 
   const apps = {
     autenticacion: appAutenticacion,
-    adopcion: crearAppAdopcion({ pool, verificarSesion }),
+    // Límite alto para que las pruebas del catálogo público no choquen con el de producción (5 por hora).
+    adopcion: crearAppAdopcion({ pool, verificarSesion, limitePublico: { maximo: 1000, ventanaMs: 60_000 } }),
     veterinaria: crearAppVeterinaria({ pool, verificarSesion }),
     dashboard: crearAppDashboard({ pool, verificarSesion }),
   }

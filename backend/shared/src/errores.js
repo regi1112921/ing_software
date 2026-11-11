@@ -36,6 +36,8 @@ const MENSAJES_RESTRICCION = {
   uq_solicitudes_finalizada_por_perro: [409, 'El perro ya fue adoptado.'],
   uq_adoptantes_documento: [409, 'Ya existe un adoptante con ese documento de identidad.'],
   uq_usuarios_correo: [409, 'Ya existe una cuenta con ese correo.'],
+  ck_solpub_telefono: [400, 'El teléfono debe tener entre 7 y 15 dígitos.'],
+  solicitudes_publicas_perro_id_fkey: [400, 'El perro indicado no existe.'],
   ck_usuarios_correo: [400, 'El correo no es válido.'],
 }
 

@@ -122,6 +122,30 @@ export interface DatosAdopcion {
   }
   fecha_solicitud?: string
   observaciones?: string | null
+  // HU-09: adopción iniciada desde una solicitud del catálogo público.
+  solicitud_publica_id?: number | null
+}
+
+// ── Solicitudes del catálogo público (HU-09) ──────────────────────────────────
+
+export type EstadoSolicitudPublica = 'pendiente' | 'convertida' | 'descartada'
+
+export interface SolicitudPublica {
+  id: number
+  perro_id: number
+  perro_nombre: string
+  perro_foto_url: string | null
+  perro_estado: EstadoPerro
+  nombre_completo: string
+  telefono: string
+  correo: string | null
+  mensaje: string | null
+  estado: EstadoSolicitudPublica
+  // Adopción creada a partir de esta solicitud (si se convirtió).
+  solicitud_id: number | null
+  revisado_por_nombre: string | null
+  revisado_en: string | null
+  creado_en: string
 }
 
 export interface CambioEstadoAdopcion {

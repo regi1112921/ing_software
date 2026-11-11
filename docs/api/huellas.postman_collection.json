@@ -861,6 +861,348 @@
       ]
     },
     {
+      "name": "2b · Catálogo público (HU-09)",
+      "description": "Rutas sin sesión del sitio público y bandeja privada de solicitudes web.",
+      "item": [
+        {
+          "name": "Filtros del catálogo (sin sesión)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/filtros",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "filtros"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200 sin token', () => pm.response.to.have.status(200));",
+                  "pm.test('trae los rangos de edad', () => pm.expect(pm.response.json().edades.map((e) => e.codigo)).to.eql(['cachorro', 'joven', 'adulto', 'senior']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo: solo disponibles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/perros",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "perros"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('no expone datos internos', () => cuerpo.perros.forEach((p) => pm.expect(p).to.not.have.property('estado')));",
+                  "pm.collectionVariables.set('perroCatalogoId', cuerpo.perros[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Catálogo filtrado (pequeño, hembra)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/perros?tamano=pequeno&sexo=hembra",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "perros"
+              ],
+              "query": [
+                {
+                  "key": "tamano",
+                  "value": "pequeno"
+                },
+                {
+                  "key": "sexo",
+                  "value": "hembra"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cumple los filtros', () => pm.response.json().perros.forEach((p) => { pm.expect(p.tamano).to.eql('pequeno'); pm.expect(p.sexo).to.eql('hembra'); }));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ficha pública del perro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/perros/{{perroCatalogoId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "perros",
+                "{{perroCatalogoId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Enviar solicitud desde la ficha",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/solicitudes",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "solicitudes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroCatalogoId}},\n  \"nombre_completo\": \"Visitante de Postman\",\n  \"telefono\": \"{{telefonoVisitante}}\",\n  \"correo\": \"visitante@correo.test\",\n  \"mensaje\": \"Tengo patio grande.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Teléfono distinto en cada corrida para no chocar con una solicitud pendiente anterior.",
+                  "pm.collectionVariables.set('telefonoVisitante', '7' + String(Date.now()).slice(-7));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('confirma con un mensaje', () => pm.expect(pm.response.json().mensaje).to.include('Gracias'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Repetir la misma solicitud → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/solicitudes",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "solicitudes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroCatalogoId}},\n  \"nombre_completo\": \"Visitante de Postman\",\n  \"telefono\": \"{{telefonoVisitante}}\",\n  \"correo\": \"visitante@correo.test\",\n  \"mensaje\": \"Tengo patio grande.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bandeja de solicitudes web (responsable de adopciones)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/solicitudes-publicas?estado=pendiente",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "solicitudes-publicas"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "pendiente"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = pm.response.json().solicitudes.find((x) => x.telefono === pm.collectionVariables.get('telefonoVisitante'));",
+                  "pm.test('aparece la solicitud enviada', () => pm.expect(s).to.be.an('object'));",
+                  "pm.collectionVariables.set('solicitudWebId', s.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bandeja sin sesión → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/solicitudes-publicas",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "solicitudes-publicas"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descartar la solicitud web",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/solicitudes-publicas/{{solicitudWebId}}/descartar",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "solicitudes-publicas",
+                "{{solicitudWebId}}",
+                "descartar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('queda descartada', () => pm.expect(pm.response.json().estado).to.eql('descartada'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "3 · Veterinaria",
       "description": "HU-08 Historial médico · HU-09 Registrar atención médica.",
       "item": [

@@ -3,6 +3,10 @@
 // Escapa % y _ para que la búsqueda los trate como texto.
 const comoPatron = (texto) => `%${texto.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
 
+// Lo que el catálogo público puede mostrar (sin estado interno ni quién lo registró).
+const COLUMNAS_PUBLICAS = `id, nombre, sexo, raza, tamano, tamano_nombre, color, foto_url,
+                           edad_meses, fecha_nacimiento_estimada, fecha_ingreso`
+
 export function crearPerrosRepository(pool) {
   return {
     async listar({ buscar, estado }) {
@@ -18,6 +22,30 @@ export function crearPerrosRepository(pool) {
 
     async obtener(id) {
       const { rows } = await pool.query('select * from v_perros where id = $1', [id])
+      return rows[0] ?? null
+    },
+
+    // HU-09 · Catálogo público: solo perros disponibles y solo datos que se pueden mostrar a cualquiera.
+    // edadMin/edadMax en meses (null = sin límite); si hay filtro de edad, los de edad desconocida no salen.
+    async listarPublicos({ tamano, sexo, edadMin, edadMax }) {
+      const { rows } = await pool.query(
+        `select ${COLUMNAS_PUBLICAS} from v_perros
+          where estado = 'disponible'
+            and ($1::text is null or tamano = $1)
+            and ($2::text is null or sexo = $2)
+            and ($3::int is null or edad_meses >= $3)
+            and ($4::int is null or edad_meses <= $4)
+          order by fecha_ingreso, id`,
+        [tamano ?? null, sexo ?? null, edadMin ?? null, edadMax ?? null],
+      )
+      return rows
+    },
+
+    async obtenerPublico(id) {
+      const { rows } = await pool.query(
+        `select ${COLUMNAS_PUBLICAS} from v_perros where id = $1 and estado = 'disponible'`,
+        [id],
+      )
       return rows[0] ?? null
     },
 

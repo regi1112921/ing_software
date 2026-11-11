@@ -13,7 +13,7 @@ Hay dos formas de correr el sistema:
 
 ### 1. Requisitos
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y **abierto**.
-- Puertos libres: `8080` (app), `3001–3004` (servicios), `5433` (base de datos).
+- Puertos libres: `8080` (app), `8082` (catálogo público), `3001–3004` (servicios), `5433` (base de datos).
 
 ### 2. Levantar
 Desde la raíz del repositorio:
@@ -26,6 +26,9 @@ La primera vez tarda unos minutos (descarga imágenes y compila). Cuando veas
 `[huellas] Base lista.` y los servicios `healthy`, abre:
 
 **http://localhost:8080**
+
+El catálogo público de perros en adopción (HU-09, sin sesión) queda en **http://localhost:8082**.
+Las solicitudes que se envían desde ahí aparecen en el panel, menú **Solicitudes web**.
 
 > Para dejarlo corriendo en segundo plano: `docker compose up --build -d`
 

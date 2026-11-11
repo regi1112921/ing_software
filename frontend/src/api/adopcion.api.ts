@@ -8,6 +8,8 @@ import type {
   EstadoPerro,
   Perro,
   PerroDetalle,
+  SolicitudPublica,
+  EstadoSolicitudPublica,
 } from './tipos'
 
 const BASE = '/api/adopcion'
@@ -30,4 +32,11 @@ export const adopcionApi = {
   crearAdopcion: (datos: DatosAdopcion) => http<Adopcion>(`${BASE}/adopciones`, { method: 'POST', body: datos }),
   cambiarEstadoAdopcion: (id: number | string, cambio: CambioEstadoAdopcion) =>
     http<Adopcion>(`${BASE}/adopciones/${id}/estado`, { method: 'PATCH', body: cambio }),
+
+  // Solicitudes del catálogo público (HU-09)
+  listarSolicitudesPublicas: (estado?: EstadoSolicitudPublica | '') =>
+    http<{ total: number; solicitudes: SolicitudPublica[] }>(`${BASE}/solicitudes-publicas${query({ estado })}`),
+  obtenerSolicitudPublica: (id: number | string) => http<SolicitudPublica>(`${BASE}/solicitudes-publicas/${id}`),
+  descartarSolicitudPublica: (id: number | string) =>
+    http<SolicitudPublica>(`${BASE}/solicitudes-publicas/${id}/descartar`, { method: 'POST' }),
 }
