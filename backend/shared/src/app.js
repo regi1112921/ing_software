@@ -1,7 +1,7 @@
 // Configuración base de Express común a todos los servicios.
 import express from 'express'
 import cors from 'cors'
-import { origenesCors } from './config.js'
+import { origenesCors, saltosProxy } from './config.js'
 import { crearExigirSesion } from './autenticacion.js'
 import { manejadorErrores } from './errores.js'
 
@@ -9,6 +9,7 @@ import { manejadorErrores } from './errores.js'
 export function crearApp({ nombre, verificarSesion, rutas }) {
   const app = express()
   app.disable('x-powered-by')
+  if (saltosProxy() > 0) app.set('trust proxy', saltosProxy())
   app.use(cors({ origin: origenesCors() }))
   app.use(express.json({ limit: '100kb' }))
 
