@@ -284,7 +284,7 @@
                 "exec": [
                   "pm.test('responde 200', () => pm.response.to.have.status(200));",
                   "const cuerpo = pm.response.json();",
-                  "pm.test('devuelve token y usuario', () => { pm.expect(cuerpo.token).to.be.a('string').and.have.length.above(20); pm.expect(cuerpo.usuario.rol).to.eql('personal'); });",
+                  "pm.test('devuelve token y usuario', () => { pm.expect(cuerpo.token).to.be.a('string').and.have.length.above(20); pm.expect(cuerpo.usuario.rol).to.eql('responsable_adopciones'); });",
                   "pm.collectionVariables.set('token', cuerpo.token);"
                 ]
               }
@@ -441,7 +441,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('responde 201', () => pm.response.to.have.status(201));",
-                  "pm.test('se crea como personal', () => pm.expect(pm.response.json().usuario.rol).to.eql('personal'));",
+                  "pm.test('se crea como personal', () => pm.expect(pm.response.json().usuario.rol).to.eql('responsable_adopciones'));",
                   "pm.collectionVariables.set('tokenRegistro', pm.response.json().token);"
                 ]
               }
