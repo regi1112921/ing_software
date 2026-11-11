@@ -1,4 +1,4 @@
-import { crearApp, exigirRol } from '@huellas/shared'
+import { ROLES, crearApp, exigirRol } from '@huellas/shared'
 import { crearIndicadoresRepository } from './repositories/indicadores.repository.js'
 import { crearIndicadoresService } from './services/indicadores.service.js'
 import { crearIndicadoresController } from './controllers/indicadores.controller.js'
@@ -12,7 +12,7 @@ export function crearAppDashboard({ pool, verificarSesion }) {
     verificarSesion,
     rutas: (app, { exigirSesion }) => {
       // Solo la administración ve el dashboard.
-      app.use(exigirSesion, exigirRol('administrador'), crearIndicadoresRoutes(crearIndicadoresController(indicadoresService)))
+      app.use(exigirSesion, exigirRol(ROLES.administrador), crearIndicadoresRoutes(crearIndicadoresController(indicadoresService)))
     },
   })
 }

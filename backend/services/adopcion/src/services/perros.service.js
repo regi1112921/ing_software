@@ -96,11 +96,12 @@ export function crearPerrosService({ perros, adopciones, catalogos }) {
     }
   }
 
-  async function obtener(idCrudo) {
+  // verAdopcion = false: adopcion_vigente llega en null (el rol no ve el módulo de adopciones).
+  async function obtener(idCrudo, { verAdopcion = true } = {}) {
     const id = validar(campos.id('El perro'), idCrudo)
     const perro = await perros.obtener(id)
     if (!perro) throw noEncontrado('El perro no existe.')
-    return { ...perro, adopcion_vigente: await adopciones.vigenteDePerro(id) }
+    return { ...perro, adopcion_vigente: verAdopcion ? await adopciones.vigenteDePerro(id) : null }
   }
 
   return {
@@ -122,7 +123,8 @@ export function crearPerrosService({ perros, adopciones, catalogos }) {
     },
 
     // HU-05 · RF-06
-    async actualizar(idCrudo, datos) {
+    // opciones.verAdopcion: igual que en obtener (lo decide el controlador según el rol).
+    async actualizar(idCrudo, datos, opciones) {
       const id = validar(campos.id('El perro'), idCrudo)
       const cambios = validar(esquemaActualizar, datos)
       const actual = await perros.obtener(id)
@@ -139,7 +141,7 @@ export function crearPerrosService({ perros, adopciones, catalogos }) {
       }
 
       await perros.actualizar(id, { ...aColumnas(cambios), estado })
-      return obtener(id)
+      return obtener(id, opciones)
     },
   }
 }
