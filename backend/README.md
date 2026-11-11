@@ -82,6 +82,7 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | Perros y catálogos (ver, registrar, editar) | ✔ | ✔ | ✔ |
 | Historial médico (consultar) | ✔ | ✔ | ✔ |
 | Registrar atención médica | ✔ | ✔ | — |
+| Controles pendientes, registrar vacunas y desparasitaciones (HU-08) | ✔ | ✔ | — |
 | Adopciones (todas las rutas) | ✔ | — | ✔ |
 
 - Sin permiso → `403`. El veterinario recibe la ficha del perro con `adopcion_vigente: null` (no ve datos del adoptante).
@@ -123,6 +124,11 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 | GET | `/veterinarios` | HU-09 · RF-12 | Usuarios activos con rol veterinario |
 | GET | `/perros/:id/historial` | HU-08 · RF-11 | Atenciones de la más reciente a la más antigua |
 | POST | `/consultas` | HU-09 · RF-12 | `{ perro_id, veterinario_id, fecha?, motivo, diagnostico, tratamiento, observaciones? }` |
+| GET | `/controles/pendientes?dias=30` | HU-08 | Vacunas y desparasitaciones vencidas o que vencen dentro de `dias` (0–365). El último registro de cada vacuna (por nombre) y de cada tipo de desparasitación manda: al registrarlo de nuevo, sale de la lista. Sin perros adoptados |
+| POST | `/vacunas` | HU-08 | `{ perro_id, veterinario_id, nombre, fecha_aplicacion?, fecha_proxima_dosis?, observaciones? }` |
+| POST | `/desparasitaciones` | HU-08 | `{ perro_id, veterinario_id, tipo: interna\|externa, producto, fecha_aplicacion?, fecha_proxima?, observaciones? }` |
+
+`GET /perros/:id/historial` incluye además `vacunas` y `desparasitaciones` (HU-08).
 
 ### Dashboard — http://localhost:3003
 Solo el rol `administrador`; los demás roles reciben `403`. "Este mes" usa la fecha de la BD (`current_date`).
@@ -137,5 +143,5 @@ Todos los servicios exponen `GET /health`.
 
 ## Fuera de alcance (sin RF en el SRS)
 
-Vacunas, gestión de usuarios y subida de fotos
+Gestión de usuarios y subida de fotos
 (la foto se guarda como URL).

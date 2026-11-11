@@ -413,7 +413,6 @@ paths:
                         id: { type: integer, example: 2 }
                         nombre_completo: { type: string, example: Andrés Ramírez }
         '401': { $ref: '#/components/responses/NoAutenticado' }
-        '403': { $ref: '#/components/responses/Prohibido' }
 
   /perros/{id}/historial:
     servers: *srvVet
@@ -422,7 +421,7 @@ paths:
     get:
       tags: [Veterinaria]
       summary: Historial médico de un perro
-      description: HU-08 · RF-11. De la atención más reciente a la más antigua.
+      description: "RF-11. Atenciones de la más reciente a la más antigua. HU-08: también las vacunas y desparasitaciones, de la más reciente a la más antigua."
       operationId: historialMedico
       responses:
         '200':
@@ -431,16 +430,21 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [perro_id, total, consultas]
+                required: [perro_id, total, consultas, vacunas, desparasitaciones]
                 properties:
                   perro_id: { type: integer, example: 4 }
-                  total: { type: integer, example: 2 }
+                  total: { type: integer, example: 2, description: Número de consultas. }
                   consultas:
                     type: array
                     items: { $ref: '#/components/schemas/Consulta' }
+                  vacunas:
+                    type: array
+                    items: { $ref: '#/components/schemas/Vacuna' }
+                  desparasitaciones:
+                    type: array
+                    items: { $ref: '#/components/schemas/Desparasitacion' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
-        '403': { $ref: '#/components/responses/Prohibido' }
         '404': { $ref: '#/components/responses/NoEncontrado' }
 
   /consultas:
@@ -471,6 +475,104 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Consulta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /controles/pendientes:
+    servers: *srvVet
+    get:
+      tags: [Veterinaria]
+      summary: Controles pendientes (vacunas y desparasitaciones)
+      description: >-
+        HU-08. Último control de cada vacuna (por nombre, sin distinguir mayúsculas) y de cada tipo de
+        desparasitación de cada perro con fecha programada: los vencidos y los que vencen dentro de `dias` días.
+        Al registrar el mismo control de nuevo, el anterior sale de la lista. No incluye perros adoptados.
+        Ordenados por fecha programada. Solo administrador y veterinario.
+      operationId: controlesPendientes
+      parameters:
+        - name: dias
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, maximum: 365, default: 30 }
+      responses:
+        '200':
+          description: Controles pendientes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [dias, total, vencidos, controles]
+                properties:
+                  dias: { type: integer, example: 30 }
+                  total: { type: integer, example: 3 }
+                  vencidos: { type: integer, example: 2 }
+                  controles:
+                    type: array
+                    items: { $ref: '#/components/schemas/ControlPendiente' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /vacunas:
+    servers: *srvVet
+    post:
+      tags: [Veterinaria]
+      summary: Registrar vacuna
+      description: HU-08. Con `fecha_proxima_dosis`, la vacuna aparecerá en los controles pendientes. Solo administrador y veterinario.
+      operationId: registrarVacuna
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [perro_id, veterinario_id, nombre]
+              properties:
+                perro_id: { type: integer, example: 4 }
+                veterinario_id: { type: integer, example: 2 }
+                nombre: { type: string, maxLength: 100, example: Antirrábica }
+                fecha_aplicacion: { type: string, format: date, description: Hoy si no se indica. }
+                fecha_proxima_dosis: { type: [string, 'null'], format: date, description: Posterior a la fecha de aplicación. }
+                observaciones: { type: [string, 'null'], maxLength: 2000 }
+      responses:
+        '201':
+          description: Vacuna registrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vacuna' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /desparasitaciones:
+    servers: *srvVet
+    post:
+      tags: [Veterinaria]
+      summary: Registrar desparasitación
+      description: HU-08. Con `fecha_proxima`, aparecerá en los controles pendientes. Solo administrador y veterinario.
+      operationId: registrarDesparasitacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [perro_id, veterinario_id, tipo, producto]
+              properties:
+                perro_id: { type: integer, example: 4 }
+                veterinario_id: { type: integer, example: 2 }
+                tipo: { type: string, enum: [interna, externa] }
+                producto: { type: string, maxLength: 100, example: Praziquantel + pirantel }
+                fecha_aplicacion: { type: string, format: date, description: Hoy si no se indica. }
+                fecha_proxima: { type: [string, 'null'], format: date, description: Posterior a la fecha de aplicación. }
+                observaciones: { type: [string, 'null'], maxLength: 2000 }
+      responses:
+        '201':
+          description: Desparasitación registrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Desparasitacion' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
@@ -824,6 +926,51 @@ components:
         veterinario_id: { type: integer }
         veterinario_nombre: { type: string, example: Andrés Ramírez }
         creado_en: { type: string, format: date-time }
+
+    Vacuna:
+      type: object
+      required: [id, perro_id, nombre, fecha_aplicacion, fecha_proxima_dosis, veterinario_id, veterinario_nombre]
+      properties:
+        id: { type: integer }
+        perro_id: { type: integer }
+        nombre: { type: string, example: Antirrábica }
+        fecha_aplicacion: { type: string, format: date }
+        fecha_proxima_dosis: { type: [string, 'null'], format: date }
+        observaciones: { type: [string, 'null'] }
+        veterinario_id: { type: integer }
+        veterinario_nombre: { type: string, example: Andrés Ramírez }
+        creado_en: { type: string, format: date-time }
+
+    Desparasitacion:
+      type: object
+      required: [id, perro_id, tipo, producto, fecha_aplicacion, fecha_proxima, veterinario_id, veterinario_nombre]
+      properties:
+        id: { type: integer }
+        perro_id: { type: integer }
+        tipo: { type: string, enum: [interna, externa] }
+        producto: { type: string, example: Fipronil (pipeta) }
+        fecha_aplicacion: { type: string, format: date }
+        fecha_proxima: { type: [string, 'null'], format: date }
+        observaciones: { type: [string, 'null'] }
+        veterinario_id: { type: integer }
+        veterinario_nombre: { type: string, example: Lucía Torres }
+        creado_en: { type: string, format: date-time }
+
+    ControlPendiente:
+      type: object
+      required: [tipo, control_id, perro_id, perro_nombre, detalle, ultima_aplicacion, fecha_programada, dias_restantes, vencido]
+      properties:
+        tipo: { type: string, enum: [vacuna, desparasitacion] }
+        control_id: { type: integer, description: id de la vacuna o desparasitación que programó el control. }
+        perro_id: { type: integer }
+        perro_nombre: { type: string, example: Toby }
+        perro_foto_url: { type: [string, 'null'] }
+        perro_estado: { $ref: '#/components/schemas/EstadoPerro' }
+        detalle: { type: string, example: Antirrábica, description: 'Nombre de la vacuna o "Desparasitación interna/externa".' }
+        ultima_aplicacion: { type: string, format: date }
+        fecha_programada: { type: string, format: date }
+        dias_restantes: { type: integer, example: -10, description: Negativo si ya venció. }
+        vencido: { type: boolean }
 
     Resumen:
       type: object

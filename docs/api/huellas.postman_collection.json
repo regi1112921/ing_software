@@ -1099,6 +1099,342 @@
               }
             }
           ]
+        },
+        {
+          "name": "Registrar vacuna con próxima dosis en 5 días (HU-08)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/vacunas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "vacunas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"nombre\": \"Antirrábica\",\n  \"fecha_proxima_dosis\": \"{{proximaDosis}}\",\n  \"observaciones\": \"Registrado desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const fecha = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000);",
+                  "pm.collectionVariables.set('proximaDosis', fecha.toISOString().slice(0, 10));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('trae el nombre del veterinario', () => pm.expect(pm.response.json().veterinario_nombre).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Controles pendientes (HU-08)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/controles/pendientes?dias=30",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "controles",
+                "pendientes"
+              ],
+              "query": [
+                {
+                  "key": "dias",
+                  "value": "30"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const cuerpo = pm.response.json();",
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye la vacuna recién registrada', () => pm.expect(cuerpo.controles.some((c) => c.perro_id === Number(pm.collectionVariables.get('perroId')) && c.detalle === 'Antirrábica' && !c.vencido)).to.be.true);",
+                  "pm.test('cuenta los vencidos', () => pm.expect(cuerpo.vencidos).to.eql(cuerpo.controles.filter((c) => c.vencido).length));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar la misma vacuna sin próxima dosis (cierra la alerta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/vacunas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "vacunas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"nombre\": \"antirrábica\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La vacuna ya no está pendiente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/controles/pendientes?dias=30",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "controles",
+                "pendientes"
+              ],
+              "query": [
+                {
+                  "key": "dias",
+                  "value": "30"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ya no aparece', () => pm.expect(pm.response.json().controles.some((c) => c.perro_id === Number(pm.collectionVariables.get('perroId')) && /antirr/i.test(c.detalle))).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar desparasitación (HU-08)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/desparasitaciones",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "desparasitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"tipo\": \"interna\",\n  \"producto\": \"Praziquantel\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('guarda el tipo', () => pm.expect(pm.response.json().tipo).to.eql('interna'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desparasitación con tipo inválido → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/desparasitaciones",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "desparasitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"tipo\": \"oral\",\n  \"producto\": \"X\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('indica el campo tipo', () => pm.expect(pm.response.json().detalles.map((d) => d.campo)).to.include('tipo'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Controles pendientes como responsable de adopciones → 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/controles/pendientes",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "controles",
+                "pendientes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403: solo administración y veterinaria (HU-08)', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
