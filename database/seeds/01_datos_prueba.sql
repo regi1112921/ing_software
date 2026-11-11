@@ -173,4 +173,18 @@ join perros   p on p.nombre = v.perro
 join usuarios u on u.correo = v.veterinario
 left join consultas c on v.en_consulta and c.perro_id = p.id and c.fecha = v.aplicacion::date;
 
+-- -----------------------------------------------------------------------------
+-- Seguimientos después de la adopción (HU-10). Rocky fue entregado el 2023-12-15;
+-- el último seguimiento detectó un problema y sigue pendiente de revisión.
+-- -----------------------------------------------------------------------------
+insert into seguimientos_adopcion (solicitud_id, fecha, tipo, observaciones, con_problemas, registrado_por)
+select s.id, v.fecha::date, v.tipo, v.observaciones, v.con_problemas, u.id
+from (values
+  ('2023-12-22', 'llamada', 'Rocky se adaptó bien. Come con normalidad y ya duerme en su cama.', false),
+  ('2024-01-20', 'visita',  'Hogar en buenas condiciones. Rocky está alegre y tiene el patio para correr.', false),
+  ('2024-03-15', 'llamada', 'La adoptante cuenta que Rocky cojea de la pata trasera desde hace una semana y aún no lo llevó al veterinario.', true)
+) as v(fecha, tipo, observaciones, con_problemas)
+join solicitudes_adopcion s on s.perro_id = (select id from perros where nombre = 'Rocky') and s.estado = 'finalizada'
+cross join (select id from usuarios where correo = 'maria.alvarado@peluchin.test') u;
+
 commit;

@@ -8,12 +8,13 @@
 
 begin;
 
-drop view  if exists v_controles_pendientes, v_perros;
-drop table if exists desparasitaciones, vacunas, consultas, solicitudes_publicas, solicitudes_adopcion, adoptantes, perros, usuarios,
+drop view  if exists v_seguimiento_adopciones, v_controles_pendientes, v_perros;
+drop table if exists seguimientos_adopcion, desparasitaciones, vacunas, consultas, solicitudes_publicas, solicitudes_adopcion, adoptantes, perros, usuarios,
   razas, estados_solicitud, estados_perro, tamanos;
 drop function if exists
   fn_edad_en_meses(date, date),
   fn_validar_veterinario(),
+  fn_validar_seguimiento(),
   fn_validar_estado_perro(),
   fn_sincronizar_estado_perro(),
   fn_validar_solicitud(),
