@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { Heart, LayoutDashboard, LoaderCircle, LogOut, PawPrint, X } from 'lucide-react'
-import type { Rol } from '@/api/tipos'
 import { useSesion } from '@/shared/sesion/SesionContext'
+import { tienePermiso, type Permiso } from '@/shared/sesion/permisos'
 import { NOMBRE_ROL, iniciales } from '@/shared/utils/formato'
 import Logo from './Logo'
 
-// roles: si se indica, el enlace solo se muestra a esos roles.
-const ENLACES: { a: string; etiqueta: string; icono: typeof PawPrint; exacto: boolean; roles?: Rol[] }[] = [
-  { a: '/', etiqueta: 'Dashboard', icono: LayoutDashboard, exacto: true, roles: ['administrador'] },
+// permiso: si se indica, el enlace solo se muestra a los roles que lo tienen (HU-07).
+const ENLACES: { a: string; etiqueta: string; icono: typeof PawPrint; exacto: boolean; permiso?: Permiso }[] = [
+  { a: '/', etiqueta: 'Dashboard', icono: LayoutDashboard, exacto: true, permiso: 'dashboard' },
   { a: '/perros', etiqueta: 'Perros', icono: PawPrint, exacto: false },
-  { a: '/adopciones', etiqueta: 'Adopciones', icono: Heart, exacto: false },
+  { a: '/adopciones', etiqueta: 'Adopciones', icono: Heart, exacto: false, permiso: 'adopciones' },
 ]
 
 interface Props {
@@ -56,7 +56,7 @@ export default function BarraLateral({ abierta, onCerrar }: Props) {
         </div>
 
         <nav aria-label="Principal" className="flex-1 p-3 pt-4 space-y-0.5">
-          {ENLACES.filter(({ roles }) => !roles || (usuario && roles.includes(usuario.rol))).map(({ a, etiqueta, icono: Icono, exacto }) => (
+          {ENLACES.filter(({ permiso }) => !permiso || tienePermiso(usuario?.rol, permiso)).map(({ a, etiqueta, icono: Icono, exacto }) => (
             <NavLink
               key={a}
               to={a}

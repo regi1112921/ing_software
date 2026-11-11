@@ -26,8 +26,8 @@ export default function App() {
 
           <Route element={<RutaProtegida />}>
             <Route element={<Layout />}>
-              {/* Solo la administración ve el dashboard; el resto empieza en Perros. */}
-              <Route element={<RutaPorRol roles={['administrador']} redirigirA="/perros" />}>
+              {/* Solo la administración ve el dashboard; el resto empieza en Perros (HU-07). */}
+              <Route element={<RutaPorRol permiso="dashboard" redirigirA="/perros" />}>
                 <Route index element={<DashboardPage />} />
               </Route>
 
@@ -38,11 +38,16 @@ export default function App() {
                 element={<PerroDetallePage pestanaHistorial={(perro) => <HistorialMedico perroId={perro.id} />} />}
               />
               <Route path="perros/:id/editar" element={<PerroFormPage />} />
-              <Route path="perros/:id/atenciones/nueva" element={<AtencionFormPage />} />
+              <Route element={<RutaPorRol permiso="registrarAtencion" redirigirA="/perros" />}>
+                <Route path="perros/:id/atenciones/nueva" element={<AtencionFormPage />} />
+              </Route>
 
-              <Route path="adopciones" element={<AdopcionesPage />} />
-              <Route path="adopciones/nueva" element={<AdopcionFormPage />} />
-              <Route path="adopciones/:id" element={<AdopcionDetallePage />} />
+              {/* HU-07: Adopciones es de administración y de responsables de adopciones. */}
+              <Route element={<RutaPorRol permiso="adopciones" redirigirA="/perros" />}>
+                <Route path="adopciones" element={<AdopcionesPage />} />
+                <Route path="adopciones/nueva" element={<AdopcionFormPage />} />
+                <Route path="adopciones/:id" element={<AdopcionDetallePage />} />
+              </Route>
 
               <Route path="*" element={<NoEncontradoPage />} />
             </Route>
