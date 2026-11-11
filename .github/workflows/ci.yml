@@ -1,7 +1,7 @@
 # Integración continua de HUELLAS.
 # Corre en cada push y en cada pull request hacia main o develop:
 #   1. backend    → pruebas de aceptación de las HU (PostgreSQL en memoria con PGlite)
-#   2. frontend   → chequeo de tipos y build de producción
+#   2. frontend   → chequeo de tipos y build de producción (panel interno y catálogo público)
 #   3. api-docs   → valida la especificación OpenAPI (docs/api/openapi.yaml)
 #   4. api-e2e    → levanta BD + 4 servicios con Docker Compose y corre la colección de Postman con Newman
 name: CI
@@ -52,6 +52,22 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       # build = tsc --noEmit && vite build
+      - run: npm run build
+
+  catalogo:
+    name: Catálogo público · tipos y build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: catalogo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: catalogo/package-lock.json
+      - run: npm ci
       - run: npm run build
 
   api-docs:
