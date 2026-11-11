@@ -151,8 +151,80 @@ export interface Consulta {
 
 export interface Historial {
   perro_id: number
+  // Número de consultas (atenciones).
   total: number
   consultas: Consulta[]
+  vacunas: Vacuna[]
+  desparasitaciones: Desparasitacion[]
+}
+
+// ── Controles preventivos (HU-08) ─────────────────────────────────────────────
+
+export type TipoDesparasitacion = 'interna' | 'externa'
+
+export interface Vacuna {
+  id: number
+  perro_id: number
+  nombre: string
+  fecha_aplicacion: string
+  fecha_proxima_dosis: string | null
+  observaciones: string | null
+  veterinario_id: number
+  veterinario_nombre: string
+}
+
+export interface Desparasitacion {
+  id: number
+  perro_id: number
+  tipo: TipoDesparasitacion
+  producto: string
+  fecha_aplicacion: string
+  fecha_proxima: string | null
+  observaciones: string | null
+  veterinario_id: number
+  veterinario_nombre: string
+}
+
+export interface ControlPendiente {
+  tipo: 'vacuna' | 'desparasitacion'
+  control_id: number
+  perro_id: number
+  perro_nombre: string
+  perro_foto_url: string | null
+  perro_estado: EstadoPerro
+  // Nombre de la vacuna o "Desparasitación interna/externa".
+  detalle: string
+  ultima_aplicacion: string
+  fecha_programada: string
+  // Negativo si ya venció.
+  dias_restantes: number
+  vencido: boolean
+}
+
+export interface ControlesPendientes {
+  dias: number
+  total: number
+  vencidos: number
+  controles: ControlPendiente[]
+}
+
+export interface DatosVacuna {
+  perro_id: number
+  veterinario_id: number
+  nombre: string
+  fecha_aplicacion?: string
+  fecha_proxima_dosis?: string | null
+  observaciones?: string | null
+}
+
+export interface DatosDesparasitacion {
+  perro_id: number
+  veterinario_id: number
+  tipo: TipoDesparasitacion
+  producto: string
+  fecha_aplicacion?: string
+  fecha_proxima?: string | null
+  observaciones?: string | null
 }
 
 export interface DatosConsulta {
