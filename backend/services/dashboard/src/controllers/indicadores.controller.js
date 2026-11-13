@@ -1,7 +1,7 @@
 export function crearIndicadoresController(indicadoresService) {
   return {
     async resumen(req, res) {
-      res.json(await indicadoresService.resumen())
+      res.json(await indicadoresService.resumen(req.query))
     },
 
     async perrosEnTratamiento(req, res) {
@@ -10,6 +10,10 @@ export function crearIndicadoresController(indicadoresService) {
 
     async adopcionesPorMes(req, res) {
       res.json(await indicadoresService.adopcionesPorMes())
+    },
+
+    async evolucion(req, res) {
+      res.json(await indicadoresService.evolucion(req.query))
     },
   }
 }
