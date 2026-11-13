@@ -2507,6 +2507,194 @@
           ]
         },
         {
+          "name": "Resumen de un año (HU-12)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/resumen?desde=2024-01-01&hasta=2024-12-31",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const { periodo } = pm.response.json();",
+                  "pm.test('devuelve el periodo pedido', () => { pm.expect(periodo.desde).to.eql('2024-01-01'); pm.expect(periodo.hasta).to.eql('2024-12-31'); });",
+                  "pm.test('trae los cuatro indicadores del periodo', () => ['ingresos', 'adopciones', 'solicitudes', 'atenciones'].forEach((c) => pm.expect(periodo[c]).to.be.a('number')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evolución del mes actual por día (HU-12)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/evolucion",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "evolucion"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const evolucion = pm.response.json();",
+                  "pm.test('va por día', () => pm.expect(evolucion.unidad).to.eql('dia'));",
+                  "pm.test('un punto por cada día del mes', () => pm.expect(evolucion.puntos.length).to.be.within(28, 31));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evolución de un año por mes (HU-12)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/evolucion?desde=2024-01-01&hasta=2024-12-31",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "evolucion"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const evolucion = pm.response.json();",
+                  "pm.test('va por mes', () => pm.expect(evolucion.unidad).to.eql('mes'));",
+                  "pm.test('12 meses', () => pm.expect(evolucion.puntos.map((p) => p.periodo)).to.have.lengthOf(12));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rango invertido → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/resumen?desde=2024-12-31&hasta=2024-01-01",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2024-12-31"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2024-01-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('marca la fecha final', () => pm.expect(pm.response.json().detalles[0].campo).to.eql('hasta'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Resumen con rol responsable de adopciones → 403",
           "request": {
             "method": "GET",

@@ -160,13 +160,15 @@ Variables: `TRUST_PROXY` (saltos de proxy, para leer la IP real) y `CORS_ORIGENE
 `GET /perros/:id/historial` incluye además `vacunas` y `desparasitaciones` (HU-08).
 
 ### Dashboard — http://localhost:3003
-Solo el rol `administrador`; los demás roles reciben `403`. "Este mes" usa la fecha de la BD (`current_date`).
+Solo el rol `administrador`; los demás roles reciben `403`. "Este mes" (`adopciones_mes`) usa la fecha de la BD (`current_date`).
+HU-12: `/resumen` y `/evolucion` aceptan `?desde=&hasta=` (fechas incluidas; por defecto, el mes actual; máximo 5 años).
 
 | Método | Ruta | HU · RF | Descripción |
 |--------|------|---------|-------------|
-| GET | `/resumen` | HU-13 · RF-03 | `{ total, por_estado: [{ codigo, nombre, cantidad }], indicadores: { en_albergue, disponibles, en_tratamiento, adopciones_mes, solicitudes_pendientes } }`. En el albergue = todos menos adoptados; pendientes = solicitudes en proceso o aprobadas |
+| GET | `/resumen` | HU-13 · RF-03 | `{ total, por_estado: [{ codigo, nombre, cantidad }], indicadores: { en_albergue, disponibles, en_tratamiento, adopciones_mes, solicitudes_pendientes }, periodo: { desde, hasta, ingresos, adopciones, solicitudes, atenciones } }`. En el albergue = todos menos adoptados; pendientes = solicitudes en proceso o aprobadas; `periodo` (HU-12) cuenta lo ocurrido entre `desde` y `hasta` |
 | GET | `/perros-en-tratamiento` | HU-14 · RF-04 | Del ingreso más antiguo al más reciente |
 | GET | `/adopciones-por-mes` | HU-13 | `{ meses: [{ mes: 'AAAA-MM', cantidad }] }`: adopciones finalizadas en los últimos 12 meses, incluidos los meses con 0 |
+| GET | `/evolucion?desde=&hasta=` | HU-12 | `{ desde, hasta, unidad: dia\|mes, total_ingresos, total_adopciones, puntos: [{ periodo, ingresos, adopciones }] }`: por día si el rango es menor a 62 días, si no por mes; incluye los de 0 |
 
 Todos los servicios exponen `GET /health`.
 
