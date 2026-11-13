@@ -43,7 +43,7 @@ tags:
   - name: Veterinaria
     description: "Puerto 3001 · HU-08, HU-09, HU-11 (agenda de citas)"
   - name: Dashboard
-    description: "Puerto 3003 · HU-13, HU-14. Solo rol administrador."
+    description: "Puerto 3003 · HU-12 (filtro de fechas), HU-13, HU-14. Solo rol administrador."
   - name: Salud
     description: Todos los servicios exponen `GET /health`.
 
@@ -1100,15 +1100,21 @@ paths:
       tags: [Dashboard]
       summary: Indicadores del albergue
       description: |
-        HU-13 · RF-03. Total y cantidad por cada estado (también los que tienen 0) e indicadores principales.
-        "Este mes" usa la fecha de la BD.
+        HU-13 · RF-03. Total y cantidad por cada estado (también los que tienen 0) e indicadores principales
+        del estado actual. "Este mes" (`adopciones_mes`) usa la fecha de la BD.
+        HU-12: `periodo` trae los ingresos, adopciones finalizadas, solicitudes recibidas y atenciones médicas
+        entre `desde` y `hasta` (por defecto, el mes actual).
       operationId: resumenDashboard
+      parameters:
+        - { name: desde, in: query, required: false, schema: { type: string, format: date }, description: "Primer día del periodo (por defecto, el 1 del mes actual)." }
+        - { name: hasta, in: query, required: false, schema: { type: string, format: date }, description: "Último día del periodo, incluido (por defecto, el último del mes de `desde` o del actual). Máximo 5 años." }
       responses:
         '200':
           description: Indicadores
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Resumen' }
+        '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
 
@@ -1168,6 +1174,45 @@ paths:
                       properties:
                         mes: { type: string, pattern: '^\d{4}-\d{2}$', example: '2026-10' }
                         cantidad: { type: integer, example: 0 }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /evolucion:
+    servers: *srvDash
+    get:
+      tags: [Dashboard]
+      summary: Ingresos y adopciones del periodo
+      description: >-
+        HU-12. Ingresos de perros y adopciones finalizadas entre `desde` y `hasta` (por defecto, el mes actual),
+        por día si el rango es menor a 62 días y por mes si es más largo. Incluye los días o meses con 0.
+      operationId: evolucionDashboard
+      parameters:
+        - { name: desde, in: query, required: false, schema: { type: string, format: date }, description: "Primer día del periodo (por defecto, el 1 del mes actual)." }
+        - { name: hasta, in: query, required: false, schema: { type: string, format: date }, description: "Último día del periodo, incluido (por defecto, el último del mes de `desde` o del actual). Máximo 5 años." }
+      responses:
+        '200':
+          description: Serie del periodo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [desde, hasta, unidad, total_ingresos, total_adopciones, puntos]
+                properties:
+                  desde: { type: string, format: date }
+                  hasta: { type: string, format: date }
+                  unidad: { type: string, enum: [dia, mes] }
+                  total_ingresos: { type: integer, example: 3 }
+                  total_adopciones: { type: integer, example: 1 }
+                  puntos:
+                    type: array
+                    items:
+                      type: object
+                      required: [periodo, ingresos, adopciones]
+                      properties:
+                        periodo: { type: string, description: "'AAAA-MM-DD' por día o 'AAAA-MM' por mes.", example: '2026-11-05' }
+                        ingresos: { type: integer, example: 1 }
+                        adopciones: { type: integer, example: 0 }
+        '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
 
@@ -1587,7 +1632,7 @@ components:
 
     Resumen:
       type: object
-      required: [total, por_estado, indicadores]
+      required: [total, por_estado, indicadores, periodo]
       properties:
         total: { type: integer, example: 8 }
         por_estado:
@@ -1608,3 +1653,14 @@ components:
             en_tratamiento: { type: integer }
             adopciones_mes: { type: integer, description: Adopciones finalizadas en el mes actual. }
             solicitudes_pendientes: { type: integer, description: Solicitudes en proceso o aprobadas. }
+        periodo:
+          type: object
+          description: HU-12 · Indicadores del rango elegido (fechas incluidas).
+          required: [desde, hasta, ingresos, adopciones, solicitudes, atenciones]
+          properties:
+            desde: { type: string, format: date, example: '2026-11-01' }
+            hasta: { type: string, format: date, example: '2026-11-30' }
+            ingresos: { type: integer, description: Perros con fecha de ingreso en el periodo. }
+            adopciones: { type: integer, description: Adopciones finalizadas en el periodo. }
+            solicitudes: { type: integer, description: Solicitudes de adopción registradas en el periodo. }
+            atenciones: { type: integer, description: Atenciones médicas (consultas) del periodo. }

@@ -374,11 +374,24 @@ export interface Resumen {
     adopciones_mes: number
     solicitudes_pendientes: number
   }
+  // HU-12 · Indicadores del rango elegido.
+  periodo: Periodo & { ingresos: number; adopciones: number; solicitudes: number; atenciones: number }
 }
 
-// Últimos 12 meses, del más antiguo al actual. mes: 'AAAA-MM'.
-export interface AdopcionesPorMes {
-  meses: { mes: string; cantidad: number }[]
+// HU-12 · Ingresos y adopciones del periodo, por día ('AAAA-MM-DD') o por mes ('AAAA-MM').
+export interface Evolucion {
+  desde: string
+  hasta: string
+  unidad: 'dia' | 'mes'
+  total_ingresos: number
+  total_adopciones: number
+  puntos: { periodo: string; ingresos: number; adopciones: number }[]
+}
+
+// HU-12 · Rango de fechas del dashboard (por defecto, el mes actual).
+export interface Periodo {
+  desde: string
+  hasta: string
 }
 
 export interface PerrosEnTratamiento {
