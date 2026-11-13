@@ -290,3 +290,70 @@ create unique index uq_solpub_solicitud on solicitudes_publicas (solicitud_id) w
 create trigger trg_solicitudes_publicas_actualizado_en
   before update on solicitudes_publicas
   for each row execute function fn_actualizar_timestamp();
+
+-- -----------------------------------------------------------------------------
+-- seguimientos_adopcion (HU-10)
+-- Visitas o llamadas del responsable de adopciones después de entregar el perro,
+-- para comprobar que está bien en su nuevo hogar. Solo se registran sobre
+-- adopciones finalizadas (perro entregado) y desde la fecha de entrega.
+-- con_problemas marca el seguimiento para revisarlo; se desmarca al resolverlo.
+-- -----------------------------------------------------------------------------
+create table seguimientos_adopcion (
+  id             bigint generated always as identity primary key,
+  solicitud_id   bigint      not null references solicitudes_adopcion (id),
+  fecha          date        not null default current_date,
+  tipo           text        not null,
+  observaciones  text        not null,
+  con_problemas  boolean     not null default false,
+  registrado_por bigint      not null references usuarios (id),
+  creado_en      timestamptz not null default now(),
+  actualizado_en timestamptz not null default now(),
+
+  constraint ck_seguimientos_tipo          check (tipo in ('visita', 'llamada')),
+  constraint ck_seguimientos_observaciones check (btrim(observaciones) <> '' and length(observaciones) <= 2000)
+);
+
+comment on table  seguimientos_adopcion is 'HU-10: visitas o llamadas de seguimiento después de una adopción finalizada.';
+comment on column seguimientos_adopcion.con_problemas is 'true = el seguimiento detectó un problema y queda pendiente de revisión.';
+
+create index ix_seguimientos_solicitud_fecha on seguimientos_adopcion (solicitud_id, fecha desc);
+create index ix_seguimientos_con_problemas   on seguimientos_adopcion (fecha desc) where con_problemas;
+create index ix_seguimientos_registrado_por  on seguimientos_adopcion (registrado_por);
+
+create trigger trg_seguimientos_actualizado_en
+  before update on seguimientos_adopcion
+  for each row execute function fn_actualizar_timestamp();
+
+-- La adopción debe estar finalizada y el seguimiento no puede ser anterior a la entrega.
+create or replace function fn_validar_seguimiento()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_estado         text;
+  v_fecha_adopcion date;
+begin
+  if tg_op = 'UPDATE' and new.solicitud_id <> old.solicitud_id then
+    raise exception 'No se puede mover un seguimiento a otra adopción.'
+      using errcode = 'check_violation';
+  end if;
+
+  select estado, fecha_adopcion into v_estado, v_fecha_adopcion
+    from solicitudes_adopcion where id = new.solicitud_id;
+
+  if v_estado is distinct from 'finalizada' then
+    raise exception 'Solo se registran seguimientos de adopciones finalizadas (estado actual: %).', coalesce(v_estado, 'inexistente')
+      using errcode = 'check_violation';
+  end if;
+  if new.fecha < v_fecha_adopcion then
+    raise exception 'El seguimiento no puede ser anterior a la entrega del perro (%).', v_fecha_adopcion
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_seguimientos_validar
+  before insert or update of solicitud_id, fecha on seguimientos_adopcion
+  for each row execute function fn_validar_seguimiento();

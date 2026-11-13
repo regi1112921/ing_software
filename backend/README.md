@@ -85,6 +85,7 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | Controles pendientes, registrar vacunas y desparasitaciones (HU-08) | ✔ | ✔ | — |
 | Adopciones (todas las rutas) | ✔ | — | ✔ |
 | Solicitudes web del catálogo (HU-09) | ✔ | — | ✔ |
+| Seguimientos después de la adopción (HU-10 · seguimiento) | ✔ | — | ✔ |
 | Catálogo público `/publico/*` | sin sesión | sin sesión | sin sesión |
 
 - Sin permiso → `403`. El veterinario recibe la ficha del perro con `adopcion_vigente: null` (no ve datos del adoptante).
@@ -119,6 +120,11 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 | GET | `/adopciones/:id` | HU-11 · RF-16 | Detalle con `transiciones_permitidas` |
 | POST | `/adopciones` | HU-10 · RF-13/14/19 | `{ perro_id, adoptante: { nombre_completo, telefono, direccion, documento_identidad? }, fecha_solicitud?, observaciones? }` |
 | PATCH | `/adopciones/:id/estado` | HU-12 · RF-17/18/19/20 | `{ estado: aprobada\|rechazada\|finalizada, fecha?, observaciones? }` |
+| GET | `/adopciones/:id/seguimientos` | HU-10 · seguimiento | Seguimientos de la adopción, del más reciente al más antiguo |
+| POST | `/adopciones/:id/seguimientos` | HU-10 · seguimiento | `{ tipo: visita\|llamada, observaciones, fecha?, con_problemas? }`. Solo adopciones finalizadas (409 si no); la fecha va de la entrega a hoy |
+| PATCH | `/adopciones/:id/seguimientos/:seguimientoId` | HU-10 · seguimiento | `{ con_problemas }`: marca el seguimiento para revisarlo o lo desmarca cuando ya se revisó |
+| GET | `/seguimientos/pendientes?dias=30` | HU-10 · seguimiento | Adopciones finalizadas sin seguimiento en los últimos `dias` (1–365), con `dias_sin_seguimiento` (desde la entrega si no hay ninguno) |
+| GET | `/seguimientos/con-problemas` | HU-10 · seguimiento | Seguimientos marcados con problemas, con perro y adoptante |
 
 ### Catálogo público (HU-09) — servicio de Adopción, http://localhost:3002
 Rutas **sin sesión** que usa el sitio [`catalogo/`](../catalogo/README.md):

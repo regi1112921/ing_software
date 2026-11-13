@@ -80,3 +80,29 @@ where u.fecha_programada is not null
   and p.estado <> 'adoptado';
 
 comment on view v_controles_pendientes is 'HU-08: último control programado de cada vacuna y tipo de desparasitación por perro (sin perros adoptados). vencido = la fecha ya pasó.';
+
+-- HU-10: estado de los seguimientos de cada adopción finalizada.
+-- dias_sin_seguimiento cuenta desde el último seguimiento o, si no hay ninguno, desde la entrega.
+create or replace view v_seguimiento_adopciones
+with (security_invoker = true)
+as
+select
+  s.id                as solicitud_id,
+  s.perro_id,
+  p.nombre            as perro_nombre,
+  p.foto_url          as perro_foto_url,
+  a.nombre_completo   as adoptante_nombre,
+  a.telefono          as adoptante_telefono,
+  s.fecha_adopcion,
+  count(g.id)::int                                   as total_seguimientos,
+  max(g.fecha)                                       as ultimo_seguimiento,
+  (count(g.id) filter (where g.con_problemas))::int  as seguimientos_con_problemas,
+  (current_date - coalesce(max(g.fecha), s.fecha_adopcion)) as dias_sin_seguimiento
+from solicitudes_adopcion s
+join perros     p on p.id = s.perro_id
+join adoptantes a on a.id = s.adoptante_id
+left join seguimientos_adopcion g on g.solicitud_id = s.id
+where s.estado = 'finalizada'
+group by s.id, p.id, a.id;
+
+comment on view v_seguimiento_adopciones is 'HU-10: por cada adopción finalizada, total de seguimientos, el último, cuántos tienen problemas y los días sin seguimiento (desde la entrega si no hay ninguno).';

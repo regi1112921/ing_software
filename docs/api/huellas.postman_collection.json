@@ -2150,6 +2150,236 @@
               }
             }
           ]
+        },
+        {
+          "name": "Registrar seguimiento con problemas (HU-10)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/seguimientos",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "seguimientos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"visita\",\n  \"observaciones\": \"El perro está bien, pero el patio no tiene cerco.\",\n  \"con_problemas\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "HU-10 · seguimiento. Solo en adopciones finalizadas; la fecha es hoy si no se indica."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const s = pm.response.json();",
+                  "pm.collectionVariables.set('seguimientoId', s.id);",
+                  "pm.test('visita marcada con problemas', () => { pm.expect(s.tipo).to.eql('visita'); pm.expect(s.con_problemas).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguimientos de la adopción",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/seguimientos",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "seguimientos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el seguimiento registrado', () => pm.expect(pm.response.json().seguimientos.map(s => s.id)).to.include(pm.collectionVariables.get('seguimientoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguimientos con problemas por revisar",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/seguimientos/con-problemas",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "seguimientos",
+                "con-problemas"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('aparece el seguimiento marcado', () => pm.expect(pm.response.json().seguimientos.map(s => s.id)).to.include(pm.collectionVariables.get('seguimientoId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar el seguimiento como revisado",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/seguimientos/{{seguimientoId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "seguimientos",
+                "{{seguimientoId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"con_problemas\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ya no tiene problemas', () => pm.expect(pm.response.json().con_problemas).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adopciones sin seguimiento en 30 días",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/seguimientos/pendientes?dias=30",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "seguimientos",
+                "pendientes"
+              ],
+              "query": [
+                {
+                  "key": "dias",
+                  "value": "30"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('la adopción con seguimiento de hoy no aparece', () => pm.expect(pm.response.json().adopciones.map(a => a.solicitud_id)).to.not.include(pm.collectionVariables.get('adopcionId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguimiento con fecha futura → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/seguimientos",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "seguimientos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"llamada\",\n  \"observaciones\": \"x\",\n  \"fecha\": \"2999-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('detalle por campo: fecha', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['fecha']));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -2420,6 +2650,10 @@
     },
     {
       "key": "adopcionId",
+      "value": ""
+    },
+    {
+      "key": "seguimientoId",
       "value": ""
     }
   ]

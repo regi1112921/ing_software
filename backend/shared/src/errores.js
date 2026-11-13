@@ -39,6 +39,9 @@ const MENSAJES_RESTRICCION = {
   ck_solpub_telefono: [400, 'El teléfono debe tener entre 7 y 15 dígitos.'],
   solicitudes_publicas_perro_id_fkey: [400, 'El perro indicado no existe.'],
   ck_usuarios_correo: [400, 'El correo no es válido.'],
+  ck_seguimientos_tipo: [400, 'El tipo de seguimiento debe ser visita o llamada.'],
+  ck_seguimientos_observaciones: [400, 'Las observaciones son obligatorias (máximo 2000 caracteres).'],
+  seguimientos_adopcion_solicitud_id_fkey: [400, 'La adopción indicada no existe.'],
 }
 
 // Traduce errores de PostgreSQL (código SQLSTATE) a respuestas HTTP.

@@ -14,6 +14,7 @@ import { TARJETA } from '@/shared/utils/estilos'
 import { NOMBRE_SEXO, formatearEdad, formatearFecha } from '@/shared/utils/formato'
 import CambioEstadoAdopcion from '../components/CambioEstadoAdopcion'
 import LineaTiempoAdopcion from '../components/LineaTiempoAdopcion'
+import SeguimientosAdopcion from '../components/SeguimientosAdopcion'
 
 const AVISO_CAMBIO: Record<string, (perro: string) => string> = {
   aprobada: () => 'Adopción aprobada.',
@@ -21,11 +22,11 @@ const AVISO_CAMBIO: Record<string, (perro: string) => string> = {
   rechazada: (perro) => `Adopción rechazada. ${perro} volvió a estar disponible.`,
 }
 
-// HU-11 · Detalle de adopción  ·  HU-12 · Actualizar su estado
+// HU-11 · Detalle de adopción  ·  HU-12 · Actualizar su estado  ·  HU-10 (sprint 2) · Seguimientos
 export default function AdopcionDetallePage() {
   const { id } = useParams()
   const navegar = useNavigate()
-  const { pathname } = useLocation()
+  const { pathname, hash } = useLocation()
   const { datos: adopcion, error, recargar } = useCarga(() => adopcionApi.obtenerAdopcion(id!), [id])
 
   function alCambiar(actualizada: Adopcion, destino: string) {
@@ -57,6 +58,10 @@ export default function AdopcionDetallePage() {
           <div className="xl:col-span-2 space-y-5">
             {error && <MensajeError mensaje={error} onReintentar={recargar} />}
             <CambioEstadoAdopcion key={adopcion.estado} adopcion={adopcion} onCambiado={alCambiar} />
+            <SeguimientosAdopcion
+              adopcion={adopcion}
+              onCambio={(aviso) => navegar(pathname + hash, { replace: true, state: { aviso } })}
+            />
 
             <section className={`${TARJETA} p-5 sm:p-6`}>
               <div className="flex items-center justify-between mb-4 gap-3">

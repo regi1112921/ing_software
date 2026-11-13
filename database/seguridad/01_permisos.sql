@@ -21,6 +21,7 @@ alter table perros               enable row level security;
 alter table adoptantes           enable row level security;
 alter table solicitudes_adopcion enable row level security;
 alter table solicitudes_publicas enable row level security;
+alter table seguimientos_adopcion enable row level security;
 alter table consultas            enable row level security;
 alter table vacunas              enable row level security;
 alter table desparasitaciones    enable row level security;
@@ -32,6 +33,7 @@ revoke execute on function
   fn_sincronizar_estado_perro(),
   fn_validar_estado_perro(),
   fn_validar_veterinario(),
+  fn_validar_seguimiento(),
   fn_edad_en_meses(date, date)
 from public;
 
@@ -44,11 +46,12 @@ begin
     if exists (select 1 from pg_roles where rolname = v_rol) then
       execute format(
         'revoke all on tamanos, estados_perro, estados_solicitud, razas, usuarios, perros, adoptantes, '
-        'solicitudes_adopcion, solicitudes_publicas, consultas, vacunas, desparasitaciones, v_perros, v_controles_pendientes from %I', v_rol);
+        'solicitudes_adopcion, solicitudes_publicas, seguimientos_adopcion, consultas, vacunas, desparasitaciones, '
+        'v_perros, v_controles_pendientes, v_seguimiento_adopciones from %I', v_rol);
       execute format('revoke all on all sequences in schema public from %I', v_rol);
       execute format(
         'revoke execute on function fn_actualizar_timestamp(), fn_validar_solicitud(), fn_sincronizar_estado_perro(), '
-        'fn_validar_estado_perro(), fn_validar_veterinario(), fn_edad_en_meses(date, date) from %I', v_rol);
+        'fn_validar_estado_perro(), fn_validar_veterinario(), fn_validar_seguimiento(), fn_edad_en_meses(date, date) from %I', v_rol);
     end if;
   end loop;
 end;
