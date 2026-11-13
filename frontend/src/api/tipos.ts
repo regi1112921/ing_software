@@ -309,6 +309,59 @@ export interface DatosConsulta {
   observaciones?: string | null
 }
 
+// ── Agenda de citas (HU-11) ───────────────────────────────────────────────────
+
+export type TipoCita = 'consulta' | 'vacuna' | 'cirugia'
+export type EstadoCita = 'programada' | 'atendida' | 'cancelada'
+
+export interface Cita {
+  id: number
+  perro_id: number
+  perro_nombre: string
+  perro_foto_url: string | null
+  veterinario_id: number
+  veterinario_nombre: string
+  fecha: string
+  // 'HH:MM', en bloques de 30 minutos.
+  hora: string
+  tipo: TipoCita
+  motivo: string
+  estado: EstadoCita
+  motivo_cancelacion: string | null
+  // Consulta del historial creada al atender la cita.
+  consulta_id: number | null
+}
+
+export interface Agenda {
+  desde: string
+  hasta: string
+  total: number
+  citas: Cita[]
+}
+
+export interface FiltrosAgenda {
+  desde?: string
+  hasta?: string
+  veterinario_id?: number | string
+  perro_id?: number | string
+  estado?: EstadoCita | ''
+}
+
+export interface DatosCita {
+  perro_id: number
+  veterinario_id: number
+  fecha: string
+  hora: string
+  tipo: TipoCita
+  motivo: string
+}
+
+export interface DatosAtencionCita {
+  diagnostico: string
+  tratamiento: string
+  observaciones?: string | null
+}
+
 // ── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface Resumen {
