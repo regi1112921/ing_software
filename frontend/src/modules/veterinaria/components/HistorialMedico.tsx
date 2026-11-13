@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Bug, Plus, Stethoscope, Syringe } from 'lucide-react'
+import { Bug, CalendarPlus, Plus, Stethoscope, Syringe } from 'lucide-react'
 import type { Historial } from '@/api/tipos'
 import { veterinariaApi } from '@/api/veterinaria.api'
 import { useCarga } from '@/shared/hooks/useCarga'
@@ -17,6 +17,7 @@ export default function HistorialMedico({ perroId }: { perroId: number }) {
   // HU-07: solo administración y veterinaria registran atenciones; el resto solo consulta.
   const puedeRegistrar = usePermiso('registrarAtencion')
   const puedeRegistrarControl = usePermiso('controles')
+  const puedeAgendar = usePermiso('citas') // HU-11
 
   if (error) return <MensajeError mensaje={error} onReintentar={recargar} />
   if (!datos) return <Cargando />
@@ -27,11 +28,18 @@ export default function HistorialMedico({ perroId }: { perroId: number }) {
         <p className="text-sm text-gray-500">
           {datos.total} {datos.total === 1 ? 'atención registrada' : 'atenciones registradas'}
         </p>
-        {datos.total > 0 && puedeRegistrar && (
-          <Link to={rutaNueva} className={BOTON_PRIMARIO}>
-            <Plus size={14} /> Registrar atención
-          </Link>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {puedeAgendar && (
+            <Link to={`/agenda/nueva?perro=${perroId}`} className={BOTON_SECUNDARIO}>
+              <CalendarPlus size={14} /> Agendar cita
+            </Link>
+          )}
+          {datos.total > 0 && puedeRegistrar && (
+            <Link to={rutaNueva} className={BOTON_PRIMARIO}>
+              <Plus size={14} /> Registrar atención
+            </Link>
+          )}
+        </div>
       </div>
 
       {datos.total === 0 ? (

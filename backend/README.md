@@ -6,7 +6,7 @@ La arquitectura y la propiedad de cada tabla están en [../docs/arquitectura.md]
 | Servicio | Puerto | Carpeta | Historias (Jira) |
 |----------|--------|---------|------------------|
 | Autenticación | 3004 | `services/autenticacion` | HU-02, HU-03 |
-| Veterinaria | 3001 | `services/veterinaria` | HU-08, HU-09 |
+| Veterinaria | 3001 | `services/veterinaria` | HU-08, HU-09, HU-11 |
 | Adopción | 3002 | `services/adopcion` | HU-04 a HU-07, HU-10 a HU-12 |
 | Dashboard | 3003 | `services/dashboard` | HU-13, HU-14 |
 
@@ -83,6 +83,7 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | Historial médico (consultar) | ✔ | ✔ | ✔ |
 | Registrar atención médica | ✔ | ✔ | — |
 | Controles pendientes, registrar vacunas y desparasitaciones (HU-08) | ✔ | ✔ | — |
+| Agenda de citas veterinarias (HU-11 · agenda) | ✔ | ✔ | — |
 | Adopciones (todas las rutas) | ✔ | — | ✔ |
 | Solicitudes web del catálogo (HU-09) | ✔ | — | ✔ |
 | Seguimientos después de la adopción (HU-10 · seguimiento) | ✔ | — | ✔ |
@@ -158,6 +159,17 @@ Variables: `TRUST_PROXY` (saltos de proxy, para leer la IP real) y `CORS_ORIGENE
 | POST | `/desparasitaciones` | HU-08 | `{ perro_id, veterinario_id, tipo: interna\|externa, producto, fecha_aplicacion?, fecha_proxima?, observaciones? }` |
 
 `GET /perros/:id/historial` incluye además `vacunas` y `desparasitaciones` (HU-08).
+
+**Agenda de citas (HU-11 · agenda, administrador y veterinario):**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/citas?desde=&hasta=&veterinario_id=&perro_id=&estado=` | Citas del rango (por defecto, la semana desde hoy; máximo 62 días), por fecha y hora |
+| POST | `/citas` | `{ perro_id, veterinario_id, fecha, hora, tipo: consulta\|vacuna\|cirugia, motivo }`. Hora en bloques de 30 minutos (`09:00`, `09:30`). No en el pasado ni para perros adoptados. Horario ocupado por otra cita no cancelada → 409 |
+| GET | `/citas/:id` | Detalle |
+| PUT | `/citas/:id` | Edita una cita `programada` (mismas reglas). Atendida o cancelada → 409 |
+| POST | `/citas/:id/cancelar` | `{ motivo_cancelacion? }`. Libera el horario |
+| POST | `/citas/:id/atender` | `{ diagnostico, tratamiento, observaciones? }` → crea la consulta en el historial (perro, veterinario, fecha y motivo de la cita) y marca la cita `atendida`, en una transacción. Solo citas de hoy o anteriores (201 con `{ cita, consulta }`) |
 
 ### Dashboard — http://localhost:3003
 Solo el rol `administrador`; los demás roles reciben `403`. "Este mes" usa la fecha de la BD (`current_date`).

@@ -19,6 +19,9 @@ import HistorialMedico from '@/modules/veterinaria/components/HistorialMedico'
 import AtencionFormPage from '@/modules/veterinaria/pages/AtencionFormPage'
 import ControlesPendientesPage from '@/modules/veterinaria/pages/ControlesPendientesPage'
 import ControlFormPage from '@/modules/veterinaria/pages/ControlFormPage'
+import AgendaPage from '@/modules/veterinaria/pages/AgendaPage'
+import CitaFormPage from '@/modules/veterinaria/pages/CitaFormPage'
+import AtenderCitaPage from '@/modules/veterinaria/pages/AtenderCitaPage'
 
 export default function App() {
   return (
@@ -50,6 +53,14 @@ export default function App() {
               <Route element={<RutaPorRol permiso="controles" redirigirA="/perros" />}>
                 <Route path="controles" element={<ControlesPendientesPage />} />
                 <Route path="perros/:id/controles/nuevo" element={<ControlFormPage />} />
+              </Route>
+
+              {/* HU-11 (sprint 2): agenda de citas veterinarias. */}
+              <Route element={<RutaPorRol permiso="citas" redirigirA="/perros" />}>
+                <Route path="agenda" element={<AgendaPage />} />
+                <Route path="agenda/nueva" element={<CitaFormPage />} />
+                <Route path="agenda/:id/editar" element={<CitaFormPage />} />
+                <Route path="agenda/:id/atender" element={<AtenderCitaPage />} />
               </Route>
 
               {/* HU-07: Adopciones es de administración y de responsables de adopciones. */}

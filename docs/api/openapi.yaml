@@ -41,7 +41,7 @@ tags:
   - name: Seguimientos
     description: "Servicio de Adopción, puerto 3002 · HU-10 (seguimiento después de la adopción). Administrador y responsable_adopciones."
   - name: Veterinaria
-    description: "Puerto 3001 · HU-08, HU-09"
+    description: "Puerto 3001 · HU-08, HU-09, HU-11 (agenda de citas)"
   - name: Dashboard
     description: "Puerto 3003 · HU-13, HU-14. Solo rol administrador."
   - name: Salud
@@ -921,6 +921,176 @@ paths:
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
 
+  /citas:
+    servers: *srvVet
+    get:
+      tags: [Veterinaria]
+      summary: Agenda de citas
+      description: >-
+        HU-11. Citas entre `desde` y `hasta` (incluidas), ordenadas por fecha y hora. Sin parámetros devuelve
+        la semana desde hoy. El rango no puede superar 62 días. Solo administrador y veterinario.
+      operationId: listarCitas
+      parameters:
+        - { name: desde, in: query, required: false, schema: { type: string, format: date }, description: Hoy si no se indica. }
+        - { name: hasta, in: query, required: false, schema: { type: string, format: date }, description: "`desde` + 6 días si no se indica." }
+        - { name: veterinario_id, in: query, required: false, schema: { type: integer } }
+        - { name: perro_id, in: query, required: false, schema: { type: integer } }
+        - { name: estado, in: query, required: false, schema: { type: string, enum: [programada, atendida, cancelada] } }
+      responses:
+        '200':
+          description: Citas del rango
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [desde, hasta, total, citas]
+                properties:
+                  desde: { type: string, format: date }
+                  hasta: { type: string, format: date }
+                  total: { type: integer, example: 4 }
+                  citas:
+                    type: array
+                    items: { $ref: '#/components/schemas/Cita' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+    post:
+      tags: [Veterinaria]
+      summary: Agendar cita
+      description: >-
+        HU-11. La hora va en bloques de 30 minutos y no puede haber dos citas vigentes (no canceladas) a la
+        misma fecha y hora (409). No se agenda en el pasado ni para un perro adoptado. El responsable debe ser
+        un veterinario activo. Solo administrador y veterinario.
+      operationId: crearCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DatosCita' }
+      responses:
+        '201':
+          description: Cita agendada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cita' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '409':
+          description: El horario ya está ocupado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "Ya hay una cita a las 09:00 de ese día (Consulta de Max). Elige otro horario." }
+
+  /citas/{id}:
+    servers: *srvVet
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Veterinaria]
+      summary: Detalle de una cita
+      description: HU-11. Solo administrador y veterinario.
+      operationId: obtenerCita
+      responses:
+        '200':
+          description: Cita
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cita' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    put:
+      tags: [Veterinaria]
+      summary: Editar cita
+      description: HU-11. Solo citas programadas (409 si está atendida o cancelada). Mismas reglas que al agendar.
+      operationId: editarCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DatosCita' }
+      responses:
+        '200':
+          description: Cita actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cita' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /citas/{id}/cancelar:
+    servers: *srvVet
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Veterinaria]
+      summary: Cancelar cita
+      description: HU-11. Solo citas programadas. La cita cancelada libera su horario.
+      operationId: cancelarCita
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                motivo_cancelacion: { type: [string, 'null'], maxLength: 500, example: El perro sigue en cuarentena. }
+      responses:
+        '200':
+          description: Cita cancelada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cita' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /citas/{id}/atender:
+    servers: *srvVet
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    post:
+      tags: [Veterinaria]
+      summary: Atender cita (crea la atención en el historial)
+      description: >-
+        HU-11. Crea la consulta en el historial médico con el perro, el veterinario, la fecha y el motivo de la
+        cita, y la marca como atendida, en una sola transacción. Solo citas programadas de hoy o de días anteriores.
+      operationId: atenderCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [diagnostico, tratamiento]
+              properties:
+                diagnostico: { type: string, maxLength: 2000, example: Otitis en remisión }
+                tratamiento: { type: string, maxLength: 2000, example: Continuar gotas 5 días }
+                observaciones: { type: [string, 'null'], maxLength: 2000 }
+      responses:
+        '201':
+          description: Cita atendida y consulta creada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cita, consulta]
+                properties:
+                  cita: { $ref: '#/components/schemas/Cita' }
+                  consulta: { $ref: '#/components/schemas/Consulta' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
   # ───────────────────────── Dashboard ─────────────────────────
   /resumen:
     servers: &srvDash
@@ -1336,6 +1506,37 @@ components:
         veterinario_id: { type: integer }
         veterinario_nombre: { type: string, example: Lucía Torres }
         creado_en: { type: string, format: date-time }
+
+    DatosCita:
+      type: object
+      required: [perro_id, veterinario_id, fecha, hora, tipo, motivo]
+      properties:
+        perro_id: { type: integer, example: 4 }
+        veterinario_id: { type: integer, example: 2 }
+        fecha: { type: string, format: date, example: '2026-11-20' }
+        hora: { type: string, pattern: '^([01][0-9]|2[0-3]):(00|30)$', example: '09:30' }
+        tipo: { type: string, enum: [consulta, vacuna, cirugia] }
+        motivo: { type: string, maxLength: 200, example: Control de la otitis }
+
+    Cita:
+      type: object
+      required: [id, perro_id, perro_nombre, veterinario_id, veterinario_nombre, fecha, hora, tipo, motivo, estado]
+      properties:
+        id: { type: integer }
+        perro_id: { type: integer }
+        perro_nombre: { type: string, example: Max }
+        perro_foto_url: { type: [string, 'null'] }
+        veterinario_id: { type: integer }
+        veterinario_nombre: { type: string, example: Andrés Ramírez }
+        fecha: { type: string, format: date }
+        hora: { type: string, example: '09:30' }
+        tipo: { type: string, enum: [consulta, vacuna, cirugia] }
+        motivo: { type: string }
+        estado: { type: string, enum: [programada, atendida, cancelada] }
+        motivo_cancelacion: { type: [string, 'null'] }
+        consulta_id: { type: [integer, 'null'], description: Consulta del historial creada al atender la cita. }
+        creado_en: { type: string, format: date-time }
+        actualizado_en: { type: string, format: date-time }
 
     Seguimiento:
       type: object

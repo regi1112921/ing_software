@@ -129,6 +129,9 @@ abierta, la app vuelve al inicio de sesión con el aviso "Tu sesión expiró".
 | `/perros/:id/atenciones/nueva` | Registrar atención médica (administración y veterinaria) | HU-09 |
 | `/controles` | Controles pendientes: vacunas y desparasitaciones vencidas (resaltadas) o próximas, con rango de 7, 30, 60 o 90 días (administración y veterinaria) | HU-08 |
 | `/perros/:id/controles/nuevo` | Registrar vacuna o desparasitación; desde `/controles` llega con el control elegido y al guardar vuelve a la lista | HU-08 |
+| `/agenda` | Agenda semanal de citas (lunes a domingo), filtro por veterinario y opción de ver las canceladas (administración y veterinaria) | HU-11 · agenda |
+| `/agenda/nueva`, `/agenda/:id/editar` | Agendar o editar una cita; los horarios ocupados ese día aparecen deshabilitados. Desde el historial del perro llega con el perro elegido | HU-11 · agenda |
+| `/agenda/:id/atender` | Atender la cita: registra diagnóstico y tratamiento en el historial médico y vuelve a la ficha del perro | HU-11 · agenda |
 | `/solicitudes-web` | Solicitudes del catálogo público: contactar, **Iniciar adopción** (abre el registro prellenado y la marca como convertida) o **Descartar** (administración y responsables de adopciones) | HU-09 |
 | `/adopciones` | Listado de adopciones con filtro por estado (administración y responsables de adopciones; también `/adopciones/*`) | HU-11 |
 | `/adopciones/nueva` | Registrar adopción (`?perro=<id>` lo preselecciona) | HU-10 |

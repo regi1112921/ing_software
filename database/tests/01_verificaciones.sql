@@ -65,7 +65,7 @@ with u as (
     ('Prueba Veterinaria', 'prueba.veterinaria@peluchin.test', 'veterinario')
   returning id, rol
 )
-insert into t_ids select 'u_' || rol, id from u;
+insert into t_ids select case rol when 'responsable_adopciones' then 'u_personal' else 'u_' || rol end, id from u;
 
 with p as (
   insert into perros (nombre, sexo, raza_id, tamano, fecha_ingreso, estado, registrado_por) values
@@ -250,6 +250,39 @@ with r as (
   returning 1
 )
 select pg_temp.verificar('vacunas: acepta una vacuna ligada a una consulta del mismo perro', (select count(*) = 1 from r));
+
+-- Citas (HU-11)
+select pg_temp.esperar_error('citas: la hora debe ser en bloques de 30 minutos', '23514',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+      values (pg_temp.id('pruebab'), pg_temp.id('u_veterinario'), '2030-01-10', '09:15', 'consulta', 'Control', pg_temp.id('u_veterinario')) $q$);
+select pg_temp.esperar_error('citas: el tipo debe ser consulta, vacuna o cirugía', '23514',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+      values (pg_temp.id('pruebab'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'baño', 'Control', pg_temp.id('u_veterinario')) $q$);
+select pg_temp.esperar_error('citas: el responsable debe tener rol veterinario', '23514',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+      values (pg_temp.id('pruebab'), pg_temp.id('u_personal'), '2030-01-10', '09:00', 'consulta', 'Control', pg_temp.id('u_veterinario')) $q$);
+select pg_temp.esperar_error('citas: atendida exige la consulta del historial', '23514',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, estado, registrado_por)
+      values (pg_temp.id('pruebab'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'consulta', 'Control', 'atendida', pg_temp.id('u_veterinario')) $q$);
+
+with c as (
+  insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+  values (pg_temp.id('pruebab'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'consulta', 'Control', pg_temp.id('u_veterinario'))
+  returning id
+)
+insert into t_ids select 'cita_b', id from c;
+
+select pg_temp.esperar_error('citas: no se agendan dos citas a la misma fecha y hora', '23505',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+      values (pg_temp.id('pruebaa'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'vacuna', 'Refuerzo', pg_temp.id('u_veterinario')) $q$);
+
+update citas set estado = 'cancelada', motivo_cancelacion = 'Reprogramada' where id = pg_temp.id('cita_b');
+with r as (
+  insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+  values (pg_temp.id('pruebaa'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'vacuna', 'Refuerzo', pg_temp.id('u_veterinario'))
+  returning 1
+)
+select pg_temp.verificar('citas: una cita cancelada libera su horario', (select count(*) = 1 from r));
 
 -- -----------------------------------------------------------------------------
 -- 5. Borrado protegido (no se pierde el historial)
