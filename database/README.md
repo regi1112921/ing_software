@@ -20,11 +20,11 @@ reset_desarrollo.sql  ⚠ Borra todas las tablas y datos
 | `schema/01_catalogos.sql` | Todos | Catálogos `tamanos`, `estados_perro`, `estados_solicitud`, `razas` (con sus valores iniciales) |
 | `schema/02_usuarios.sql` | Todos (autenticación) | `usuarios` |
 | `schema/03_adopcion.sql` | Servicio de Adopción | `perros`, `adoptantes`, `solicitudes_adopcion` + reglas de estado, `solicitudes_publicas`, `seguimientos_adopcion` (HU-10) |
-| `schema/04_veterinaria.sql` | Servicio de Veterinaria | `consultas`, `vacunas`, `desparasitaciones` |
+| `schema/04_veterinaria.sql` | Servicio de Veterinaria | `consultas`, `vacunas`, `desparasitaciones`, `citas` (HU-11 · agenda) |
 | `views/01_vistas.sql` | Todos (lectura) | `fn_edad_en_meses`, vista `v_perros` (con raza, tamaño y estado legibles), vista `v_controles_pendientes` (HU-08), vista `v_seguimiento_adopciones` (HU-10) |
 | `seguridad/01_permisos.sql` | — | RLS y revocación de `anon` / `authenticated` |
-| `seeds/01_datos_prueba.sql` | — | 4 usuarios, 8 perros, 3 adoptantes, 3 solicitudes, 5 consultas, 6 vacunas, 4 desparasitaciones, 3 seguimientos |
-| `tests/01_verificaciones.sql` | — | 52 verificaciones |
+| `seeds/01_datos_prueba.sql` | — | 4 usuarios, 8 perros, 3 adoptantes, 3 solicitudes, 5 consultas, 6 vacunas, 4 desparasitaciones, 3 seguimientos, 5 citas |
+| `tests/01_verificaciones.sql` | — | 58 verificaciones |
 
 **Catálogos:** para agregar una raza basta con
 `insert into razas (nombre) values ('Akita');`. Los estados y tamaños también son filas,
