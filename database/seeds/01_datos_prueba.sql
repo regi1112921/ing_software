@@ -187,4 +187,20 @@ from (values
 join solicitudes_adopcion s on s.perro_id = (select id from perros where nombre = 'Rocky') and s.estado = 'finalizada'
 cross join (select id from usuarios where correo = 'maria.alvarado@peluchin.test') u;
 
+-- -----------------------------------------------------------------------------
+-- Citas veterinarias (HU-11). Fechas relativas a hoy para que la agenda siempre
+-- tenga citas próximas; una está cancelada y libera su horario.
+-- -----------------------------------------------------------------------------
+insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, estado, motivo_cancelacion, registrado_por)
+select p.id, u.id, current_date + v.dias, v.hora::time, v.tipo, v.motivo, v.estado, v.cancelacion, u.id
+from (values
+  ('Max',   'andres.ramirez@peluchin.test', 1, '09:00', 'consulta', 'Control de la otitis y revisión del tratamiento', 'programada', null),
+  ('Nina',  'lucia.torres@peluchin.test',   1, '10:30', 'vacuna',   'Refuerzo de la vacuna séxtuple',                  'programada', null),
+  ('Coco',  'andres.ramirez@peluchin.test', 3, '08:30', 'cirugia',  'Esterilización',                                  'programada', null),
+  ('Luna',  'lucia.torres@peluchin.test',   6, '15:00', 'consulta', 'Revisión general antes de la adopción',           'programada', null),
+  ('Toby',  'andres.ramirez@peluchin.test', 2, '11:00', 'vacuna',   'Antirrábica anual',                               'cancelada',  'Se adelantó la vacuna en la consulta del lunes.')
+) as v(perro, veterinario, dias, hora, tipo, motivo, estado, cancelacion)
+join perros   p on p.nombre = v.perro
+join usuarios u on u.correo = v.veterinario;
+
 commit;

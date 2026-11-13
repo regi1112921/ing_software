@@ -25,6 +25,7 @@ alter table seguimientos_adopcion enable row level security;
 alter table consultas            enable row level security;
 alter table vacunas              enable row level security;
 alter table desparasitaciones    enable row level security;
+alter table citas                enable row level security;
 
 -- Las funciones de PostgreSQL se pueden ejecutar por cualquiera (PUBLIC) por defecto.
 revoke execute on function
@@ -46,7 +47,7 @@ begin
     if exists (select 1 from pg_roles where rolname = v_rol) then
       execute format(
         'revoke all on tamanos, estados_perro, estados_solicitud, razas, usuarios, perros, adoptantes, '
-        'solicitudes_adopcion, solicitudes_publicas, seguimientos_adopcion, consultas, vacunas, desparasitaciones, '
+        'solicitudes_adopcion, solicitudes_publicas, seguimientos_adopcion, consultas, vacunas, desparasitaciones, citas, '
         'v_perros, v_controles_pendientes, v_seguimiento_adopciones from %I', v_rol);
       execute format('revoke all on all sequences in schema public from %I', v_rol);
       execute format(
