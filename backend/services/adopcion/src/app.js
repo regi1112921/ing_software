@@ -6,23 +6,27 @@ import { crearAdoptantesRepository } from './repositories/adoptantes.repository.
 import { crearAdopcionesRepository } from './repositories/adopciones.repository.js'
 import { crearSolicitudesPublicasRepository } from './repositories/solicitudesPublicas.repository.js'
 import { crearSeguimientosRepository } from './repositories/seguimientos.repository.js'
+import { crearAvisosRepository } from './repositories/avisos.repository.js'
 import { crearPerrosService } from './services/perros.service.js'
 import { crearAdopcionesService } from './services/adopciones.service.js'
 import { crearPublicoService } from './services/publico.service.js'
 import { crearSolicitudesPublicasService } from './services/solicitudesPublicas.service.js'
 import { crearSeguimientosService } from './services/seguimientos.service.js'
+import { crearAvisosService } from './services/avisos.service.js'
 import { crearCatalogosController } from './controllers/catalogos.controller.js'
 import { crearPerrosController } from './controllers/perros.controller.js'
 import { crearAdopcionesController } from './controllers/adopciones.controller.js'
 import { crearPublicoController } from './controllers/publico.controller.js'
 import { crearSolicitudesPublicasController } from './controllers/solicitudesPublicas.controller.js'
 import { crearSeguimientosController } from './controllers/seguimientos.controller.js'
+import { crearAvisosController } from './controllers/avisos.controller.js'
 import { crearCatalogosRoutes } from './routes/catalogos.routes.js'
 import { crearPerrosRoutes } from './routes/perros.routes.js'
 import { crearAdopcionesRoutes } from './routes/adopciones.routes.js'
 import { crearPublicoRoutes } from './routes/publico.routes.js'
 import { crearSolicitudesPublicasRoutes } from './routes/solicitudesPublicas.routes.js'
 import { crearSeguimientosDeAdopcionRoutes, crearSeguimientosRoutes } from './routes/seguimientos.routes.js'
+import { crearAvisosRoutes } from './routes/avisos.routes.js'
 
 // limitePublico: opcional, para cambiar el límite de solicitudes del catálogo (pruebas).
 export function crearAppAdopcion({ pool, verificarSesion, limitePublico }) {
@@ -32,12 +36,14 @@ export function crearAppAdopcion({ pool, verificarSesion, limitePublico }) {
   const adopciones = crearAdopcionesRepository(pool)
   const solicitudesPublicas = crearSolicitudesPublicasRepository(pool)
   const seguimientos = crearSeguimientosRepository(pool)
+  const avisos = crearAvisosRepository(pool)
 
   const perrosService = crearPerrosService({ perros, adopciones, catalogos })
   const adopcionesService = crearAdopcionesService({ pool, adopciones, adoptantes, perros, solicitudesPublicas })
   const publicoService = crearPublicoService({ perros, catalogos, solicitudesPublicas })
   const solicitudesPublicasService = crearSolicitudesPublicasService({ pool, solicitudesPublicas })
   const seguimientosController = crearSeguimientosController(crearSeguimientosService({ adopciones, seguimientos }))
+  const avisosController = crearAvisosController(crearAvisosService({ adopciones, avisos }))
 
   return crearApp({
     nombre: 'adopcion',
@@ -56,6 +62,13 @@ export function crearAppAdopcion({ pool, verificarSesion, limitePublico }) {
         exigirSesion,
         exigirRol(...ROLES_ADOPCIONES),
         crearSeguimientosDeAdopcionRoutes(seguimientosController),
+      )
+      // HU-13: avisos al adoptante sobre su solicitud (también antes que /adopciones/:id).
+      app.use(
+        '/adopciones/:id/avisos',
+        exigirSesion,
+        exigirRol(...ROLES_ADOPCIONES),
+        crearAvisosRoutes(avisosController),
       )
       app.use('/seguimientos', exigirSesion, exigirRol(...ROLES_ADOPCIONES), crearSeguimientosRoutes(seguimientosController))
       app.use(
