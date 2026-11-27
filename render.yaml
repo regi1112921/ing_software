@@ -28,7 +28,7 @@ envVarGroups:
       - key: LOGIN_MINUTOS_BLOQUEO
         value: "5"
       - key: AUTENTICACION_URL
-        value: https://huellas-autenticacion.onrender.com
+        value: https://huellas-autenticacion-e8jv.onrender.com
       - key: CORS_ORIGENES
         value: https://huellas-panel.vercel.app,https://huellas-catalogo.vercel.app
 
