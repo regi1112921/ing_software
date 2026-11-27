@@ -1,0 +1,116 @@
+# Blueprint de Render: los cinco servicios del backend (una misma imagen, backend/Dockerfile),
+# conectados a la base de Supabase.
+# Render → New → Blueprint → elegir este repositorio.
+# Al crear, Render pide los valores marcados con "sync: false" (secretos de Supabase);
+# nunca los escribas en este archivo.
+# Frontends: frontend/ (panel) y catalogo/ (catálogo público) van en Vercel.
+
+envVarGroups:
+  - name: huellas-backend
+    envVars:
+      # Supabase → Connect → Session pooler (puerto 5432), con la contraseña de la base.
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      # El Session pooler gratuito de Supabase admite pocas conexiones: 5 servicios × 3.
+      - key: DB_POOL_MAX
+        value: "3"
+      - key: TZ
+        value: America/La_Paz
+      # Render pone 1 proxy delante del servicio (para leer la IP real del visitante).
+      - key: TRUST_PROXY
+        value: "1"
+      - key: SESION_HORAS
+        value: "8"
+      - key: LOGIN_MAX_INTENTOS
+        value: "3"
+      - key: LOGIN_MINUTOS_BLOQUEO
+        value: "5"
+      - key: AUTENTICACION_URL
+        value: https://huellas-autenticacion.onrender.com
+      - key: CORS_ORIGENES
+        value: https://huellas-panel.vercel.app,https://huellas-catalogo.vercel.app
+
+services:
+  - type: web
+    name: huellas-autenticacion
+    runtime: docker
+    region: ohio
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: node services/autenticacion/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: huellas-backend
+      - key: AUTENTICACION_PORT
+        value: "10000"
+
+  - type: web
+    name: huellas-veterinaria
+    runtime: docker
+    region: ohio
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: node services/veterinaria/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: huellas-backend
+      - key: VETERINARIA_PORT
+        value: "10000"
+
+  - type: web
+    name: huellas-adopcion
+    runtime: docker
+    region: ohio
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: node services/adopcion/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: huellas-backend
+      - key: ADOPCION_PORT
+        value: "10000"
+      - key: SOLICITUDES_PUBLICAS_MAXIMO
+        value: "5"
+      - key: SOLICITUDES_PUBLICAS_VENTANA_MINUTOS
+        value: "60"
+      # Subida de fotos a Supabase Storage (Project Settings → API). La clave service_role
+      # es secreta: solo aquí, nunca en el frontend. Vacías = se pega la URL de la foto.
+      - key: SUPABASE_URL
+        value: https://yfummucqwyagbnmgotqu.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_BUCKET_FOTOS
+        value: fotos
+
+  - type: web
+    name: huellas-dashboard
+    runtime: docker
+    region: ohio
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: node services/dashboard/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: huellas-backend
+      - key: DASHBOARD_PORT
+        value: "10000"
+
+  - type: web
+    name: huellas-voluntariado
+    runtime: docker
+    region: ohio
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerCommand: node services/voluntariado/src/index.js
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: huellas-backend
+      - key: VOLUNTARIADO_PORT
+        value: "10000"
