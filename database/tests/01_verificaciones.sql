@@ -248,6 +248,33 @@ select pg_temp.esperar_error('solicitudes: un perro adoptado no recibe nuevas so
 select pg_temp.esperar_error('perros: un perro adoptado no vuelve a disponible a mano', '23514',
   $q$ update perros set estado = 'disponible' where id = pg_temp.id('pruebaa') $q$);
 
+-- HU-14: historias de adopciones exitosas
+select pg_temp.esperar_error('historias: solo de adopciones finalizadas', '23514',
+  $q$ insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, publicado_por)
+      values (pg_temp.id('sol_1'), 'Título', 'Relato.', 'https://example.com/a.jpg', pg_temp.id('u_personal')) $q$);
+select pg_temp.esperar_error('historias: no se publica antes de la entrega del perro', '23514',
+  $q$ insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, fecha_publicacion, publicado_por)
+      values (pg_temp.id('sol_2'), 'Título', 'Relato.', 'https://example.com/a.jpg', '2024-02-19', pg_temp.id('u_personal')) $q$);
+select pg_temp.esperar_error('historias: la foto debe ser una URL http(s)', '23514',
+  $q$ insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, publicado_por)
+      values (pg_temp.id('sol_2'), 'Título', 'Relato.', 'C:\fotos\a.jpg', pg_temp.id('u_personal')) $q$);
+with h as (
+  insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, fecha_publicacion, publicado_por)
+  values (pg_temp.id('sol_2'), 'Nuevo hogar', 'Ya está en casa.', 'https://example.com/a.jpg', '2024-03-01', pg_temp.id('u_personal'))
+  returning id
+)
+insert into t_ids select 'historia_1', id from h;
+select pg_temp.verificar('historias: se publica visible para una adopción finalizada',
+  (select visible from historias_adopcion where id = pg_temp.id('historia_1')));
+select pg_temp.esperar_error('historias: una sola historia por adopción', '23505',
+  $q$ insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, publicado_por)
+      values (pg_temp.id('sol_2'), 'Otra', 'Otro relato.', 'https://example.com/b.jpg', pg_temp.id('u_personal')) $q$);
+update historias_adopcion set visible = false where id = pg_temp.id('historia_1');
+select pg_temp.verificar('historias: se oculta sin borrarla',
+  (select not visible from historias_adopcion where id = pg_temp.id('historia_1')));
+select pg_temp.esperar_error('historias: no se borra', '23514',
+  $q$ delete from historias_adopcion where id = pg_temp.id('historia_1') $q$);
+
 -- -----------------------------------------------------------------------------
 -- 4. Historial médico
 -- -----------------------------------------------------------------------------

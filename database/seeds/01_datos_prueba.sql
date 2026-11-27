@@ -220,3 +220,19 @@ from solicitudes_adopcion s
 join adoptantes a on a.id = s.adoptante_id
 cross join (select id from usuarios where correo = 'maria.alvarado@peluchin.test') u
 where s.perro_id = (select id from perros where nombre = 'Luna') and s.estado = 'rechazada';
+
+-- -----------------------------------------------------------------------------
+-- Historias de adopciones exitosas (HU-14). La de Rocky, entregado el 2023-12-15,
+-- se muestra en el catálogo público (con su foto del albergue).
+-- -----------------------------------------------------------------------------
+insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, fecha_publicacion, publicado_por)
+select s.id,
+       'Rocky encontró su patio para correr',
+       'Rocky llegó al albergue con miedo a la gente y pasaba los días en un rincón. Con paciencia aprendió a confiar, '
+       || 'y en diciembre se fue a vivir con Ana. Hoy duerme en su propia cama, corre todas las mañanas en el patio '
+       || 'y recibe a cada visita moviendo la cola. ¡Gracias, Ana, por darle una segunda oportunidad!',
+       p.foto_url, '2024-01-25', u.id
+from solicitudes_adopcion s
+join perros p on p.id = s.perro_id
+cross join (select id from usuarios where correo = 'admin@peluchin.test') u
+where p.nombre = 'Rocky' and s.estado = 'finalizada';
