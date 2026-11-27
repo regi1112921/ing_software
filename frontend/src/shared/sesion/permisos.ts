@@ -11,6 +11,8 @@ export const PERMISOS = {
   controles: ['administrador', 'veterinario'],
   // HU-11: agenda de citas veterinarias.
   citas: ['administrador', 'veterinario'],
+  // HU-14: historias de adopciones exitosas (las publica la administración).
+  historias: ['administrador'],
 } as const satisfies Record<string, readonly Rol[]>
 
 export type Permiso = keyof typeof PERMISOS

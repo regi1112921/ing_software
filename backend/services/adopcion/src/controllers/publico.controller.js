@@ -13,6 +13,11 @@ export function crearPublicoController(publicoService) {
       res.json(await publicoService.obtener(req.params.id))
     },
 
+    async historias(req, res) {
+      const historias = await publicoService.historias()
+      res.json({ total: historias.length, historias })
+    },
+
     async enviarSolicitud(req, res) {
       const { perro_nombre } = await publicoService.enviarSolicitud(req.body)
       res.status(201).json({

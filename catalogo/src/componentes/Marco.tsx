@@ -1,5 +1,10 @@
-import { Link, Outlet } from 'react-router-dom'
-import { Heart, PawPrint } from 'lucide-react'
+import { Link, NavLink, Outlet } from 'react-router-dom'
+import { Heart, PawPrint, Sparkles } from 'lucide-react'
+
+const claseEnlace = ({ isActive }: { isActive: boolean }) =>
+  `text-sm font-semibold flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-colors ${
+    isActive ? 'bg-forest-800 text-white' : 'text-forest-100 hover:text-white'
+  }`
 
 // Encabezado y pie comunes del catálogo público.
 export default function Marco() {
@@ -16,9 +21,16 @@ export default function Marco() {
               <span className="block text-xs text-forest-300">Albergue Peluchín</span>
             </span>
           </Link>
-          <Link to="/" className="text-sm font-semibold text-forest-100 hover:text-white flex items-center gap-1.5">
-            <Heart size={15} /> Perros en adopción
-          </Link>
+          <nav aria-label="Principal" className="flex items-center gap-1 sm:gap-2">
+            <NavLink to="/" end className={claseEnlace}>
+              <Heart size={15} /> <span className="hidden sm:inline">Perros en adopción</span>
+              <span className="sm:hidden">Perros</span>
+            </NavLink>
+            {/* HU-14: historias de adopciones exitosas. */}
+            <NavLink to="/historias" className={claseEnlace}>
+              <Sparkles size={15} /> <span>Historias</span>
+            </NavLink>
+          </nav>
         </div>
       </header>
 

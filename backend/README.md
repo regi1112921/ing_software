@@ -88,6 +88,7 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | Solicitudes web del catálogo (HU-09) | ✔ | — | ✔ |
 | Seguimientos después de la adopción (HU-10 · seguimiento) | ✔ | — | ✔ |
 | Avisos al adoptante (HU-13) | ✔ | — | ✔ |
+| Historias de adopciones exitosas (HU-14) | ✔ | — | — |
 | Catálogo público `/publico/*` | sin sesión | sin sesión | sin sesión |
 
 - Sin permiso → `403`. El veterinario recibe la ficha del perro con `adopcion_vigente: null` (no ve datos del adoptante).
@@ -130,6 +131,11 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 | PATCH | `/adopciones/:id/seguimientos/:seguimientoId` | HU-10 · seguimiento | `{ con_problemas }`: marca el seguimiento para revisarlo o lo desmarca cuando ya se revisó |
 | GET | `/seguimientos/pendientes?dias=30` | HU-10 · seguimiento | Adopciones finalizadas sin seguimiento en los últimos `dias` (1–365), con `dias_sin_seguimiento` (desde la entrega si no hay ninguno) |
 | GET | `/seguimientos/con-problemas` | HU-10 · seguimiento | Seguimientos marcados con problemas, con perro y adoptante |
+| GET | `/historias?visible=` | HU-14 | Historias publicadas (visibles y ocultas), de la más reciente a la más antigua. Solo administración |
+| GET | `/historias/candidatas` | HU-14 | Adopciones finalizadas que aún no tienen historia |
+| GET | `/historias/:id` | HU-14 | Detalle de una historia |
+| POST | `/historias` | HU-14 | `{ solicitud_id, titulo, relato, foto_url, fecha_publicacion?, visible? }`. Solo adopciones finalizadas y una por adopción (409); la fecha va de la entrega a hoy (por defecto, hoy) |
+| PATCH | `/historias/:id` | HU-14 | Cambia solo lo enviado (`titulo`, `relato`, `foto_url`, `fecha_publicacion`, `visible`). `visible: false` la oculta del catálogo sin borrarla |
 
 ### Catálogo público (HU-09) — servicio de Adopción, http://localhost:3002
 Rutas **sin sesión** que usa el sitio [`catalogo/`](../catalogo/README.md):
@@ -139,6 +145,7 @@ Rutas **sin sesión** que usa el sitio [`catalogo/`](../catalogo/README.md):
 | GET | `/publico/filtros` | Tamaños, sexos y rangos de edad (`cachorro` < 12 meses, `joven` 12–35, `adulto` 36–95, `senior` ≥ 96) |
 | GET | `/publico/perros?tamano=&sexo=&edad=` | Solo perros `disponible` y solo datos públicos. Con filtro de edad no salen los de edad desconocida |
 | GET | `/publico/perros/:id` | Ficha; 404 si ya no está disponible |
+| GET | `/publico/historias` | HU-14: historias visibles de adopciones exitosas, de la más reciente a la más antigua, sin datos del adoptante |
 | POST | `/publico/solicitudes` | `{ perro_id, nombre_completo, telefono, correo?, mensaje? }` → pre-solicitud `pendiente` (201). Repetida por la misma persona → 409. Límite por IP (`SOLICITUDES_PUBLICAS_MAXIMO`, 5 por hora) → 429. `sitio_web` es un campo trampa: si llega con texto responde 201 sin guardar |
 
 Bandeja privada (administrador y responsable_adopciones):

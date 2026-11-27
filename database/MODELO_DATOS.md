@@ -357,6 +357,26 @@ Registro de los avisos al adoptante sobre su solicitud. El aviso se abre en What
 
 No se modifica ni se borra (lo impide el trigger). Índices: `ix_notificaciones_solicitud (solicitud_id, enviado_en desc)`, `ix_notificaciones_enviado_por`.
 
+### historias_adopcion (HU-14)
+
+Historias de adopciones exitosas (foto y relato) que se muestran en el catálogo público,
+de la más reciente a la más antigua. Una por adopción finalizada.
+
+| Campo | Tipo | Oblig. | Restricciones |
+|-------|------|:------:|---------------|
+| id | bigint | Sí | PK |
+| solicitud_id | bigint | Sí | FK → solicitudes_adopcion; UNIQUE (una historia por adopción). La adopción debe estar `finalizada` (`fn_validar_historia`) |
+| titulo | text | Sí | no vacío, máx. 120 |
+| relato | text | Sí | no vacío, máx. 2000 |
+| foto_url | text | Sí | URL `http(s)://` |
+| fecha_publicacion | date | Sí | hoy por defecto; no anterior a la entrega del perro (`fecha_adopcion`) |
+| visible | boolean | Sí | `true` por defecto; `false` = oculta en el catálogo público |
+| publicado_por | bigint | Sí | FK → usuarios |
+| creado_en / actualizado_en | timestamptz | Sí | |
+
+No se borra ni se mueve a otra adopción (lo impide el trigger): se oculta con `visible = false`.
+Índices: `ix_historias_publicas (fecha_publicacion desc, id desc) where visible`, `ix_historias_publicado_por`.
+
 ### consultas
 
 | Campo | Tipo | Oblig. | Restricciones |
