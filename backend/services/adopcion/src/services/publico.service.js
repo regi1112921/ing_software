@@ -47,7 +47,7 @@ const esquemaSolicitud = z.object({
   sitio_web: z.string().optional(),
 })
 
-export function crearPublicoService({ perros, catalogos, solicitudesPublicas }) {
+export function crearPublicoService({ perros, catalogos, solicitudesPublicas, historias }) {
   return {
     // Opciones de los filtros del catálogo.
     async filtros() {
@@ -71,6 +71,11 @@ export function crearPublicoService({ perros, catalogos, solicitudesPublicas }) 
       const perro = await perros.obtenerPublico(id)
       if (!perro) throw noEncontrado('Este perro no está disponible para adopción.')
       return perro
+    },
+
+    // HU-14: historias de adopciones exitosas visibles, de la más reciente a la más antigua.
+    async historias() {
+      return historias.listarPublicas()
     },
 
     // Pre-solicitud: el responsable de adopciones la revisa y la convierte en una adopción.

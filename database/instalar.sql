@@ -15,7 +15,7 @@ begin;
 \ir schema/02_usuarios.sql
 \ir schema/03_adopcion.sql
 \ir schema/04_veterinaria.sql
-\ir schema/05_donaciones.sql
+\ir schema/05_voluntariado.sql
 \ir views/01_vistas.sql
 \ir seguridad/01_permisos.sql
 commit;

@@ -12,6 +12,7 @@ import { crearAlmacenSesiones } from '../../services/autenticacion/src/services/
 import { crearAppAdopcion } from '../../services/adopcion/src/app.js'
 import { crearAppVeterinaria } from '../../services/veterinaria/src/app.js'
 import { crearAppDashboard } from '../../services/dashboard/src/app.js'
+import { crearAppVoluntariado } from '../../services/voluntariado/src/app.js'
 
 const ARCHIVOS_BD = [
   'schema/00_comun.sql',
@@ -19,7 +20,7 @@ const ARCHIVOS_BD = [
   'schema/02_usuarios.sql',
   'schema/03_adopcion.sql',
   'schema/04_veterinaria.sql',
-  'schema/05_donaciones.sql',
+  'schema/05_voluntariado.sql',
   'views/01_vistas.sql',
   'seguridad/01_permisos.sql',
   'seeds/01_datos_prueba.sql',
@@ -66,6 +67,7 @@ export async function crearEntorno() {
     adopcion: crearAppAdopcion({ pool, verificarSesion, limitePublico: { maximo: 1000, ventanaMs: 60_000 } }),
     veterinaria: crearAppVeterinaria({ pool, verificarSesion }),
     dashboard: crearAppDashboard({ pool, verificarSesion }),
+    voluntariado: crearAppVoluntariado({ pool, verificarSesion }),
   }
 
   async function iniciarSesion(correo = PERSONAL) {

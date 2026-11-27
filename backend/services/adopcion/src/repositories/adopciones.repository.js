@@ -3,7 +3,7 @@
 const SELECT_ADOPCION = `
   select s.id, s.estado, es.nombre as estado_nombre,
          s.fecha_solicitud, s.fecha_aprobacion, s.fecha_rechazo, s.fecha_adopcion,
-         s.observaciones, s.creado_en, s.actualizado_en,
+         s.observaciones, s.motivo_rechazo, s.creado_en, s.actualizado_en,
          json_build_object(
            'id', p.id, 'nombre', p.nombre, 'raza', p.raza, 'sexo', p.sexo,
            'tamano', p.tamano, 'tamano_nombre', p.tamano_nombre,
@@ -63,7 +63,8 @@ export function crearAdopcionesRepository(pool) {
     },
 
     // columnaFecha viene de una lista fija del servicio, nunca del usuario.
-    async cambiarEstado(cliente, id, { estado, columnaFecha, fecha, observaciones }) {
+    // motivoRechazo solo llega al rechazar (HU-13).
+    async cambiarEstado(cliente, id, { estado, columnaFecha, fecha, observaciones, motivoRechazo = null }) {
       await cliente.query(
         `update solicitudes_adopcion
             set estado = $2,
@@ -72,9 +73,10 @@ export function crearAdopcionesRepository(pool) {
                   when $4::text is null then observaciones
                   when observaciones is null then $4
                   else observaciones || E'\\n\\n' || $4
-                end
+                end,
+                motivo_rechazo = $5
           where id = $1`,
-        [id, estado, fecha, observaciones],
+        [id, estado, fecha, observaciones, motivoRechazo],
       )
     },
   }

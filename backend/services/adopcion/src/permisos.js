@@ -5,3 +5,6 @@ import { ROLES } from '@huellas/shared'
 export const ROLES_ADOPCIONES = [ROLES.administrador, ROLES.responsableAdopciones]
 
 export const puedeVerAdopciones = (usuario) => ROLES_ADOPCIONES.includes(usuario?.rol)
+
+// HU-14: las historias de adopciones exitosas las publica, edita y oculta la administración.
+export const ROLES_HISTORIAS = [ROLES.administrador]

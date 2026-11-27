@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { AlertTriangle, Banknote, CheckCircle, ClipboardList, HandCoins, Heart, LogIn, PawPrint, Plus, Stethoscope } from 'lucide-react'
+import { AlertTriangle, CheckCircle, ClipboardList, Download, Heart, LogIn, PawPrint, Plus, Stethoscope } from 'lucide-react'
 import { dashboardApi } from '@/api/dashboard.api'
 import type { Periodo } from '@/api/tipos'
 import { useSesion } from '@/shared/sesion/SesionContext'
@@ -23,6 +24,12 @@ const FECHA_VALIDA = /^\d{4}-\d{2}-\d{2}$/
 export default function DashboardPage() {
   const { usuario } = useSesion()
   const [parametros, setParametros] = useSearchParams()
+  const [tipoReporte, setTipoReporte] = useState<'perros' | 'adopciones' | 'atenciones'>('perros')
+  const [formatoReporte, setFormatoReporte] = useState<'pdf' | 'excel'>('pdf')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
+  const [descargando, setDescargando] = useState(false)
+  const [errorReporte, setErrorReporte] = useState<string | null>(null)
 
   // El periodo vive en la URL (?desde=&hasta=) para poder compartirlo; por defecto, el mes actual.
   const desdeParam = parametros.get('desde') ?? ''
@@ -50,6 +57,18 @@ export default function DashboardPage() {
     setParametros(esPorDefecto ? {} : { desde: nuevo.desde, hasta: nuevo.hasta }, { replace: true })
   }
 
+  async function descargarReporte() {
+    setDescargando(true)
+    setErrorReporte(null)
+    try {
+      await dashboardApi.descargarReporte(tipoReporte, formatoReporte, desde || undefined, hasta || undefined)
+    } catch (error) {
+      setErrorReporte(error instanceof Error ? error.message : 'No se pudo generar el reporte.')
+    } finally {
+      setDescargando(false)
+    }
+  }
+
   return (
     <>
       <EncabezadoPagina
@@ -68,6 +87,32 @@ export default function DashboardPage() {
         {cargando && !datos && <Cargando />}
         {resumen && tratamiento && evolucion && (
           <div className={`space-y-7 transition-opacity ${cargando ? 'opacity-60' : ''}`} aria-busy={cargando}>
+            <section className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-end gap-3">
+              <label className="text-sm font-semibold text-gray-700">Reporte
+                <select value={tipoReporte} onChange={(e) => setTipoReporte(e.target.value as typeof tipoReporte)} className="mt-1 block rounded-lg border border-gray-300 px-3 py-2">
+                  <option value="perros">Perros</option>
+                  <option value="adopciones">Adopciones</option>
+                  <option value="atenciones">Atenciones veterinarias</option>
+                </select>
+              </label>
+              <label className="text-sm font-semibold text-gray-700">Desde
+                <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="mt-1 block rounded-lg border border-gray-300 px-3 py-2" />
+              </label>
+              <label className="text-sm font-semibold text-gray-700">Hasta
+                <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="mt-1 block rounded-lg border border-gray-300 px-3 py-2" />
+              </label>
+              <label className="text-sm font-semibold text-gray-700">Formato
+                <select value={formatoReporte} onChange={(e) => setFormatoReporte(e.target.value as typeof formatoReporte)} className="mt-1 block rounded-lg border border-gray-300 px-3 py-2">
+                  <option value="pdf">PDF</option>
+                  <option value="excel">Excel (.csv)</option>
+                </select>
+              </label>
+              <button type="button" onClick={descargarReporte} disabled={descargando} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-forest-600 text-white font-semibold disabled:opacity-60">
+                <Download size={15} /> {descargando ? 'Generando...' : 'Descargar'}
+              </button>
+              {errorReporte && <p className="text-sm text-red-600">{errorReporte}</p>}
+            </section>
+
             <section aria-labelledby="titulo-periodo">
               <h2 id="titulo-periodo" className="font-bold text-gray-800 mb-3">
                 En el periodo <span className="font-semibold text-gray-500">· {describirPeriodo(resumen.periodo)}</span>

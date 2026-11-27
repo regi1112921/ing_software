@@ -7,7 +7,7 @@ import RutaProtegida from '@/shared/components/RutaProtegida'
 import LoginPage from '@/modules/autenticacion/pages/LoginPage'
 import RegistroPage from '@/modules/autenticacion/pages/RegistroPage'
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage'
-import DonacionesPage from '@/modules/adopcion/pages/DonacionesPage'
+import VoluntariadoPage from '@/modules/voluntariado/pages/VoluntariadoPage'
 import PerrosPage from '@/modules/adopcion/pages/PerrosPage'
 import PerroFormPage from '@/modules/adopcion/pages/PerroFormPage'
 import PerroDetallePage from '@/modules/adopcion/pages/PerroDetallePage'
@@ -16,6 +16,7 @@ import AdopcionFormPage from '@/modules/adopcion/pages/AdopcionFormPage'
 import AdopcionDetallePage from '@/modules/adopcion/pages/AdopcionDetallePage'
 import SolicitudesWebPage from '@/modules/adopcion/pages/SolicitudesWebPage'
 import SeguimientosPage from '@/modules/adopcion/pages/SeguimientosPage'
+import HistoriasPage from '@/modules/adopcion/pages/HistoriasPage'
 import HistorialMedico from '@/modules/veterinaria/components/HistorialMedico'
 import AtencionFormPage from '@/modules/veterinaria/pages/AtencionFormPage'
 import ControlesPendientesPage from '@/modules/veterinaria/pages/ControlesPendientesPage'
@@ -37,6 +38,9 @@ export default function App() {
               {/* Solo la administración ve el dashboard; el resto empieza en Perros (HU-07). */}
               <Route element={<RutaPorRol permiso="dashboard" redirigirA="/perros" />}>
                 <Route index element={<DashboardPage />} />
+              </Route>
+              <Route element={<RutaPorRol permiso="voluntariado" redirigirA="/perros" />}>
+                <Route path="voluntariado" element={<VoluntariadoPage />} />
               </Route>
 
               {/* HU-18: administración registra donaciones ya recibidas. */}
@@ -77,6 +81,11 @@ export default function App() {
                 <Route path="solicitudes-web" element={<SolicitudesWebPage />} />
                 {/* HU-10 (sprint 2): seguimiento después de la adopción. */}
                 <Route path="seguimientos" element={<SeguimientosPage />} />
+              </Route>
+
+              {/* HU-14: historias de adopciones exitosas (solo la administración). */}
+              <Route element={<RutaPorRol permiso="historias" redirigirA="/perros" />}>
+                <Route path="historias" element={<HistoriasPage />} />
               </Route>
 
               <Route path="*" element={<NoEncontradoPage />} />

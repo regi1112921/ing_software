@@ -2,7 +2,7 @@
 
 | Archivo | Qué es |
 |---------|--------|
-| [`openapi.yaml`](openapi.yaml) | Especificación OpenAPI 3.1 (Swagger) de los 4 servicios: rutas, cuerpos, respuestas y errores |
+| [`openapi.yaml`](openapi.yaml) | Especificación OpenAPI 3.1 (Swagger) de los 5 servicios: rutas, cuerpos, respuestas y errores |
 | [`huellas.postman_collection.json`](huellas.postman_collection.json) | Colección de Postman con 42 peticiones y sus pruebas, en el orden de las HU |
 | [`local.postman_environment.json`](local.postman_environment.json) | Entorno de Postman: URLs de los servicios y usuarios de prueba de Docker |
 | [`redocly.yaml`](redocly.yaml) | Reglas con las que CI valida `openapi.yaml` |
@@ -38,11 +38,11 @@ Se puede correr varias veces sobre la misma base: crea un perro y una cuenta nue
 
 | Carpeta | HU que prueba |
 |---------|---------------|
-| 0 · Salud | `GET /health` de los 4 servicios |
+| 0 · Salud | `GET /health` de los 5 servicios |
 | 1 · Autenticación | HU-02 iniciar sesión, registro de cuenta |
 | 2 · Perros | HU-04 registrar, HU-05 editar, HU-06 listar/buscar/filtrar, HU-07 ficha |
 | 3 · Veterinaria | HU-08 historial, HU-09 registrar atención |
-| 4 · Adopciones | HU-10 registrar, HU-11 consultar, HU-12 aprobar y finalizar (con los 409 de las reglas de negocio) |
+| 4 · Adopciones | HU-10 registrar, HU-11 consultar, HU-12 aprobar y finalizar (con los 409 de las reglas de negocio), HU-13 aviso al adoptante (motivo obligatorio al rechazar, mensaje sugerido, registro y 409 en finalizada), HU-14 historias de adopciones exitosas (publicar, 403 al responsable, 409 repetida, catálogo sin sesión, ocultar y volver a mostrar) |
 | 5 · Dashboard | HU-13 indicadores, HU-14 perros en tratamiento, 403 para roles que no son administrador |
 | 6 · Cerrar sesión | HU-03 cerrar sesión y token invalidado |
 
@@ -55,6 +55,6 @@ Se puede correr varias veces sobre la misma base: crea un perro y una cuenta nue
 | Backend · pruebas | `npm test` en `backend/` (pruebas de aceptación con PostgreSQL en memoria) |
 | Frontend · tipos y build | `npm run build` en `frontend/` |
 | API · OpenAPI válido | `redocly lint` sobre `openapi.yaml` |
-| API · colección de Postman | Levanta BD + 4 servicios con Docker Compose y corre la colección con Newman; sube el reporte JUnit como artefacto |
+| API · colección de Postman | Levanta BD + servicios con Docker Compose y corre la colección con Newman; sube el reporte JUnit como artefacto |
 
 Si cambias un endpoint, actualiza `openapi.yaml` y la colección en el mismo PR: CI falla si la colección deja de pasar.

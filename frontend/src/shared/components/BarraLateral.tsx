@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { CalendarDays, ClipboardList, Globe, HandCoins, Heart, LayoutDashboard, LoaderCircle, LogOut, PawPrint, Syringe, X } from 'lucide-react'
+import { CalendarDays, ClipboardList, Globe, Heart, LayoutDashboard, LoaderCircle, LogOut, PawPrint, Sparkles, Syringe, UsersRound, X } from 'lucide-react'
 import { useSesion } from '@/shared/sesion/SesionContext'
 import { tienePermiso, type Permiso } from '@/shared/sesion/permisos'
 import { NOMBRE_ROL, iniciales } from '@/shared/utils/formato'
@@ -9,11 +9,12 @@ import Logo from './Logo'
 // permiso: si se indica, el enlace solo se muestra a los roles que lo tienen (HU-07).
 const ENLACES: { a: string; etiqueta: string; icono: typeof PawPrint; exacto: boolean; permiso?: Permiso }[] = [
   { a: '/', etiqueta: 'Dashboard', icono: LayoutDashboard, exacto: true, permiso: 'dashboard' },
-  { a: '/donaciones', etiqueta: 'Donaciones', icono: HandCoins, exacto: false, permiso: 'donaciones' },
+  { a: '/voluntariado', etiqueta: 'Voluntariado', icono: UsersRound, exacto: false, permiso: 'voluntariado' },
   { a: '/perros', etiqueta: 'Perros', icono: PawPrint, exacto: false },
   { a: '/adopciones', etiqueta: 'Adopciones', icono: Heart, exacto: false, permiso: 'adopciones' },
   { a: '/solicitudes-web', etiqueta: 'Solicitudes web', icono: Globe, exacto: false, permiso: 'adopciones' },
   { a: '/seguimientos', etiqueta: 'Seguimientos', icono: ClipboardList, exacto: false, permiso: 'adopciones' },
+  { a: '/historias', etiqueta: 'Historias', icono: Sparkles, exacto: false, permiso: 'historias' },
   { a: '/agenda', etiqueta: 'Agenda', icono: CalendarDays, exacto: false, permiso: 'citas' },
   { a: '/controles', etiqueta: 'Controles', icono: Syringe, exacto: false, permiso: 'controles' },
 ]

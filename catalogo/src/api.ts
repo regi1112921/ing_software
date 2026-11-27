@@ -1,4 +1,4 @@
-// Cliente de la API pública del servicio de Adopción (HU-09). No usa sesión.
+// Cliente de la API pública del servicio de Adopción (HU-09 y HU-14). No usa sesión.
 
 export type Sexo = 'macho' | 'hembra'
 export type RangoEdad = 'cachorro' | 'joven' | 'adulto' | 'senior'
@@ -15,6 +15,17 @@ export interface PerroPublico {
   edad_meses: number | null
   fecha_nacimiento_estimada: boolean
   fecha_ingreso: string
+}
+
+// HU-14 · Historia de una adopción exitosa (solo datos que se pueden mostrar a cualquiera).
+export interface HistoriaPublica {
+  id: number
+  titulo: string
+  relato: string
+  foto_url: string
+  fecha_publicacion: string
+  perro_nombre: string
+  fecha_adopcion: string
 }
 
 export interface Opcion<T extends string = string> {
@@ -88,5 +99,6 @@ export const api = {
   listarPerros: (filtros: { tamano?: string; sexo?: string; edad?: string }) =>
     http<{ total: number; perros: PerroPublico[] }>(`/perros${query(filtros)}`),
   obtenerPerro: (id: string | number) => http<PerroPublico>(`/perros/${id}`),
+  listarHistorias: () => http<{ total: number; historias: HistoriaPublica[] }>('/historias'),
   enviarSolicitud: (datos: DatosSolicitud) => http<{ mensaje: string }>('/solicitudes', { method: 'POST', body: datos }),
 }

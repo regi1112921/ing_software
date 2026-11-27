@@ -141,14 +141,18 @@ describe('Servicio de Adopción · adopciones', () => {
     })
 
     it('una adopción finalizada ya no cambia de estado', async () => {
-      const respuesta = await api.patch(`/adopciones/${adopcionId}/estado`).send({ estado: 'rechazada' })
+      const respuesta = await api.patch(`/adopciones/${adopcionId}/estado`).send({ estado: 'rechazada', motivo_rechazo: 'Ya fue entregado.' })
       assert.equal(respuesta.status, 409)
     })
 
     it('rechazar devuelve el perro a Disponible y agrega el motivo a las observaciones (RF-20)', async () => {
       const toby = await idPerro(entorno.pool, 'Toby') // tiene una adopción En proceso creada en HU-10
       const { id, observaciones } = (await api.get(`/perros/${toby}`)).body.adopcion_vigente
-      const respuesta = await api.patch(`/adopciones/${id}/estado`).send({ estado: 'rechazada', observaciones: 'No pasó la visita.' })
+      const respuesta = await api.patch(`/adopciones/${id}/estado`).send({
+        estado: 'rechazada',
+        observaciones: 'No pasó la visita.',
+        motivo_rechazo: 'La vivienda no es adecuada.',
+      })
       assert.equal(respuesta.status, 200)
       assert.equal(respuesta.body.estado, 'rechazada')
       assert.ok(respuesta.body.fecha_rechazo)

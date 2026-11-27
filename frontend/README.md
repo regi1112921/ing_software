@@ -124,7 +124,7 @@ abierta, la app vuelve al inicio de sesión con el aviso "Tu sesión expiró".
 | `/registro` | Crear cuenta (siempre con rol responsable de adopciones; deja la sesión iniciada) | — |
 | `/` | Dashboard (solo administración; los demás roles van a `/perros`). Filtro de fechas con atajos (este mes, por defecto; últimos 3 meses; este año) o rango propio, guardado en la URL (`?desde=&hasta=`): ingresos, adopciones, solicitudes y atenciones del periodo y gráfico de ingresos y adopciones por día o por mes. Aparte, el estado actual: 4 indicadores, distribución y perros en tratamiento | HU-12, HU-13, HU-14 |
 | `/perros` | Listado con búsqueda y filtro por estado | HU-06 |
-| `/perros/nuevo` · `/perros/:id/editar` | Registrar / editar perro | HU-04, HU-05 |
+| `/perros/nuevo` · `/perros/:id/editar` | Registrar / editar perro. **Subir foto** la guarda en Supabase Storage y llena la URL (también se puede pegar un enlace) | HU-04, HU-05 |
 | `/perros/:id` | Ficha con pestañas Información, Historial médico y Adopción (esta última no la ve veterinaria) | HU-07, HU-08 |
 | `/perros/:id/atenciones/nueva` | Registrar atención médica (administración y veterinaria) | HU-09 |
 | `/controles` | Controles pendientes: vacunas y desparasitaciones vencidas (resaltadas) o próximas, con rango de 7, 30, 60 o 90 días (administración y veterinaria) | HU-08 |
@@ -135,8 +135,9 @@ abierta, la app vuelve al inicio de sesión con el aviso "Tu sesión expiró".
 | `/solicitudes-web` | Solicitudes del catálogo público: contactar, **Iniciar adopción** (abre el registro prellenado y la marca como convertida) o **Descartar** (administración y responsables de adopciones) | HU-09 |
 | `/adopciones` | Listado de adopciones con filtro por estado (administración y responsables de adopciones; también `/adopciones/*`) | HU-11 |
 | `/adopciones/nueva` | Registrar adopción (`?perro=<id>` lo preselecciona) | HU-10 |
-| `/adopciones/:id` | Detalle y cambio de estado; en las finalizadas, sección **Seguimientos** (registrar visita o llamada, marcar con problemas o como revisado) | HU-11, HU-12, HU-10 · seguimiento |
+| `/adopciones/:id` | Detalle y cambio de estado (al rechazar, motivo obligatorio); en las aprobadas o rechazadas, sección **Aviso al adoptante** (mensaje sugerido editable, botón **Enviar por WhatsApp** que registra el aviso y abre wa.me, e historial de avisos); en las finalizadas, sección **Seguimientos** (registrar visita o llamada, marcar con problemas o como revisado) | HU-11, HU-12, HU-13, HU-10 · seguimiento |
 | `/seguimientos` | Seguimientos con problemas por revisar y adopciones sin seguimiento en los últimos 30 días (administración y responsables de adopciones) | HU-10 · seguimiento |
+| `/historias` | Historias de adopciones exitosas (solo administración): **Publicar historia** (adopción finalizada sin historia, título, relato, fecha y foto con vista previa), **Editar**, **Ocultar** y **Mostrar**. Las visibles salen en el catálogo público | HU-14 |
 | Menú lateral | Usuario conectado y "Cerrar sesión" | HU-03 |
 
 ### Cambios respecto al mockup

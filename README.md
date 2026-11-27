@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/regi1112921/ing_software/actions/workflows/ci.yml/badge.svg)](https://github.com/regi1112921/ing_software/actions/workflows/ci.yml)
 
-Sistema dividido en **tres capas independientes** y **cuatro servicios**:
+Sistema dividido en **tres capas independientes** y **cinco servicios**:
 
 | Capa | Carpeta | Tecnología |
 |------|---------|------------|
@@ -17,6 +17,7 @@ Sistema dividido en **tres capas independientes** y **cuatro servicios**:
 | Adopción | 3002 | Perros, catálogos, adoptantes, adopciones y catálogo público (`/publico`) |
 | Dashboard | 3003 | Estadísticas e indicadores (solo lectura) |
 | Autenticación | 3004 | Inicio y cierre de sesión |
+| Voluntariado | 3005 | Registro de voluntarios, turnos y horas mensuales |
 
 ## Estructura
 
@@ -33,7 +34,8 @@ Sistema dividido en **tres capas independientes** y **cuatro servicios**:
 │       ├── autenticacion/    Servicio de autenticación
 │       ├── veterinaria/      Servicio de veterinaria
 │       ├── adopcion/         Servicio de adopción
-│       └── dashboard/        Servicio de dashboard
+│       ├── dashboard/        Servicio de dashboard
+│       └── voluntariado/     Servicio de voluntarios y turnos
 ├── catalogo/                 SITIO PÚBLICO (HU-09): perros en adopción y solicitudes
 └── frontend/                 CAPA DE PRESENTACIÓN
     └── src/
@@ -42,7 +44,8 @@ Sistema dividido en **tres capas independientes** y **cuatro servicios**:
         └── modules/
             ├── veterinaria/
             ├── adopcion/
-            └── dashboard/
+            ├── dashboard/
+            └── voluntariado/
 ```
 
 ## Estado del proyecto

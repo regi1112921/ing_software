@@ -1,6 +1,6 @@
 # Backend — Node.js + Express (microservicios)
 
-Cuatro aplicaciones Express independientes que comparten una base PostgreSQL en Supabase.
+Cinco aplicaciones Express independientes que comparten una base PostgreSQL en Supabase.
 La arquitectura y la propiedad de cada tabla están en [../docs/arquitectura.md](../docs/arquitectura.md).
 
 | Servicio | Puerto | Carpeta | Historias (Jira) |
@@ -9,6 +9,7 @@ La arquitectura y la propiedad de cada tabla están en [../docs/arquitectura.md]
 | Veterinaria | 3001 | `services/veterinaria` | HU-08, HU-09, HU-11 |
 | Adopción | 3002 | `services/adopcion` | HU-04 a HU-07, HU-10 a HU-12 |
 | Dashboard | 3003 | `services/dashboard` | HU-13, HU-14 |
+| Voluntariado | 3005 | `services/voluntariado` | HU-16 |
 
 ```
 backend/
@@ -40,7 +41,7 @@ Los usuarios de los datos de prueba no tienen contraseña. Asigna una a quien va
 npm run asignar-contrasena -w @huellas/autenticacion -- maria.alvarado@peluchin.test
 ```
 
-Levanta los cuatro servicios a la vez:
+Levanta los cinco servicios a la vez:
 
 ```bash
 npm run dev
@@ -87,6 +88,8 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | Adopciones (todas las rutas) | ✔ | — | ✔ |
 | Solicitudes web del catálogo (HU-09) | ✔ | — | ✔ |
 | Seguimientos después de la adopción (HU-10 · seguimiento) | ✔ | — | ✔ |
+| Avisos al adoptante (HU-13) | ✔ | — | ✔ |
+| Historias de adopciones exitosas (HU-14) | ✔ | — | — |
 | Catálogo público `/publico/*` | sin sesión | sin sesión | sin sesión |
 
 - Sin permiso → `403`. El veterinario recibe la ficha del perro con `adopcion_vigente: null` (no ve datos del adoptante).
@@ -120,12 +123,28 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 | GET | `/adopciones` | HU-11 · RF-15 | Listado, de la más reciente a la más antigua |
 | GET | `/adopciones/:id` | HU-11 · RF-16 | Detalle con `transiciones_permitidas` |
 | POST | `/adopciones` | HU-10 · RF-13/14/19 | `{ perro_id, adoptante: { nombre_completo, telefono, direccion, documento_identidad? }, fecha_solicitud?, observaciones? }` |
-| PATCH | `/adopciones/:id/estado` | HU-12 · RF-17/18/19/20 | `{ estado: aprobada\|rechazada\|finalizada, fecha?, observaciones? }` |
+| PATCH | `/adopciones/:id/estado` | HU-12 · RF-17/18/19/20 · HU-13 | `{ estado: aprobada\|rechazada\|finalizada, fecha?, observaciones?, motivo_rechazo? }`. `motivo_rechazo` (máx. 500) es obligatorio al rechazar. Al aprobar o rechazar, la respuesta trae `aviso: { tipo, telefono, mensaje, enlace_whatsapp }` |
+| GET | `/adopciones/:id/avisos/borrador` | HU-13 | Mensaje sugerido para el adoptante según el estado: aprobación con los siguientes pasos, rechazo con el motivo. 409 en proceso o finalizada. No registra nada |
+| POST | `/adopciones/:id/avisos` | HU-13 | `{ mensaje? }` (si no se envía, el sugerido). Registra quién, cuándo, teléfono y texto (201) y devuelve `enlace_whatsapp` (`https://wa.me/<telefono>?text=...`; +591 si el teléfono no tiene código de país). 409 en proceso o finalizada |
+| GET | `/adopciones/:id/avisos` | HU-13 | Avisos enviados, del más reciente al más antiguo |
 | GET | `/adopciones/:id/seguimientos` | HU-10 · seguimiento | Seguimientos de la adopción, del más reciente al más antiguo |
 | POST | `/adopciones/:id/seguimientos` | HU-10 · seguimiento | `{ tipo: visita\|llamada, observaciones, fecha?, con_problemas? }`. Solo adopciones finalizadas (409 si no); la fecha va de la entrega a hoy |
 | PATCH | `/adopciones/:id/seguimientos/:seguimientoId` | HU-10 · seguimiento | `{ con_problemas }`: marca el seguimiento para revisarlo o lo desmarca cuando ya se revisó |
 | GET | `/seguimientos/pendientes?dias=30` | HU-10 · seguimiento | Adopciones finalizadas sin seguimiento en los últimos `dias` (1–365), con `dias_sin_seguimiento` (desde la entrega si no hay ninguno) |
 | GET | `/seguimientos/con-problemas` | HU-10 · seguimiento | Seguimientos marcados con problemas, con perro y adoptante |
+| GET | `/historias?visible=` | HU-14 | Historias publicadas (visibles y ocultas), de la más reciente a la más antigua. Solo administración |
+| GET | `/historias/candidatas` | HU-14 | Adopciones finalizadas que aún no tienen historia |
+| GET | `/historias/:id` | HU-14 | Detalle de una historia |
+| POST | `/historias` | HU-14 | `{ solicitud_id, titulo, relato, foto_url, fecha_publicacion?, visible? }`. Solo adopciones finalizadas y una por adopción (409); la fecha va de la entrega a hoy (por defecto, hoy) |
+| PATCH | `/historias/:id` | HU-14 | Cambia solo lo enviado (`titulo`, `relato`, `foto_url`, `fecha_publicacion`, `visible`). `visible: false` la oculta del catálogo sin borrarla |
+
+### Fotos — servicio de Adopción, http://localhost:3002
+Cualquier rol con sesión. Las fotos se guardan en Supabase Storage (bucket público `fotos`); en la BD
+solo queda su URL pública, en `perros.foto_url` o `historias_adopcion.foto_url`.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/fotos?carpeta=perros\|historias` | Cuerpo: la imagen tal cual (`Content-Type: image/jpeg`, `image/png` o `image/webp`). Responde `{ url, ruta, tipo, tamano }` (201). El tipo se comprueba por el contenido (otro formato → 400); más de 5 MB → 413; sin `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` → 503; si Supabase falla → 502 |
 
 ### Catálogo público (HU-09) — servicio de Adopción, http://localhost:3002
 Rutas **sin sesión** que usa el sitio [`catalogo/`](../catalogo/README.md):
@@ -135,6 +154,7 @@ Rutas **sin sesión** que usa el sitio [`catalogo/`](../catalogo/README.md):
 | GET | `/publico/filtros` | Tamaños, sexos y rangos de edad (`cachorro` < 12 meses, `joven` 12–35, `adulto` 36–95, `senior` ≥ 96) |
 | GET | `/publico/perros?tamano=&sexo=&edad=` | Solo perros `disponible` y solo datos públicos. Con filtro de edad no salen los de edad desconocida |
 | GET | `/publico/perros/:id` | Ficha; 404 si ya no está disponible |
+| GET | `/publico/historias` | HU-14: historias visibles de adopciones exitosas, de la más reciente a la más antigua, sin datos del adoptante |
 | POST | `/publico/solicitudes` | `{ perro_id, nombre_completo, telefono, correo?, mensaje? }` → pre-solicitud `pendiente` (201). Repetida por la misma persona → 409. Límite por IP (`SOLICITUDES_PUBLICAS_MAXIMO`, 5 por hora) → 429. `sitio_web` es un campo trampa: si llega con texto responde 201 sin guardar |
 
 Bandeja privada (administrador y responsable_adopciones):
@@ -181,6 +201,28 @@ HU-12: `/resumen` y `/evolucion` aceptan `?desde=&hasta=` (fechas incluidas; por
 | GET | `/perros-en-tratamiento` | HU-14 · RF-04 | Del ingreso más antiguo al más reciente |
 | GET | `/adopciones-por-mes` | HU-13 | `{ meses: [{ mes: 'AAAA-MM', cantidad }] }`: adopciones finalizadas en los últimos 12 meses, incluidos los meses con 0 |
 | GET | `/evolucion?desde=&hasta=` | HU-12 | `{ desde, hasta, unidad: dia\|mes, total_ingresos, total_adopciones, puntos: [{ periodo, ingresos, adopciones }] }`: por día si el rango es menor a 62 días, si no por mes; incluye los de 0 |
+
+### Voluntariado — http://localhost:3005
+Solo el rol `administrador` puede acceder. La interfaz incluye el registro de contactos y disponibilidad, calendario semanal y total de horas por mes.
+
+| Método | Ruta | HU | Descripción |
+|--------|------|----|-------------|
+| GET | `/voluntarios` | HU-16 | Lista voluntarios activos |
+| POST | `/voluntarios` | HU-16 | Registra nombre, teléfono, correo opcional y disponibilidad |
+| GET | `/turnos?desde=&hasta=` | HU-16 | Turnos de un rango de hasta siete días |
+| POST | `/turnos` | HU-16 | Asigna un turno; rechaza horarios superpuestos |
+| GET | `/horas?mes=AAAA-MM` | HU-16 | Horas asignadas por persona en el mes |
+
+### Voluntariado — http://localhost:3005
+Solo el rol `administrador` puede acceder. La interfaz incluye el registro de contactos y disponibilidad, calendario semanal y total de horas por mes.
+
+| Método | Ruta | HU | Descripción |
+|--------|------|----|-------------|
+| GET | `/voluntarios` | HU-16 | Lista voluntarios activos |
+| POST | `/voluntarios` | HU-16 | Registra nombre, teléfono, correo opcional y disponibilidad |
+| GET | `/turnos?desde=&hasta=` | HU-16 | Turnos de un rango de hasta siete días |
+| POST | `/turnos` | HU-16 | Asigna un turno; rechaza horarios superpuestos |
+| GET | `/horas?mes=AAAA-MM` | HU-16 | Horas asignadas por persona en el mes |
 
 Todos los servicios exponen `GET /health`.
 

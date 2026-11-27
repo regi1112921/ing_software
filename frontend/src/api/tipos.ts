@@ -134,9 +134,13 @@ export interface Adopcion {
   fecha_rechazo: string | null
   fecha_adopcion: string | null
   observaciones: string | null
+  // HU-13: motivo que se le comunicó al adoptante (solo en rechazadas).
+  motivo_rechazo: string | null
   perro: PerroResumen
   adoptante: Adoptante
   transiciones_permitidas?: EstadoAdopcion[]
+  // HU-13: al aprobar o rechazar, el aviso para el adoptante ya viene listo.
+  aviso?: AvisoAdoptante | null
 }
 
 export interface DatosAdopcion {
@@ -179,6 +183,29 @@ export interface CambioEstadoAdopcion {
   estado: 'aprobada' | 'rechazada' | 'finalizada'
   fecha?: string
   observaciones?: string | null
+  // HU-13: obligatorio al rechazar.
+  motivo_rechazo?: string | null
+}
+
+// ── Aviso al adoptante sobre su solicitud (HU-13) ─────────────────────────────
+
+export type TipoAviso = 'aprobacion' | 'rechazo'
+
+export interface AvisoAdoptante {
+  tipo: TipoAviso
+  // Formato internacional sin "+", como lo pide wa.me.
+  telefono: string
+  mensaje: string
+  enlace_whatsapp: string
+}
+
+export interface AvisoRegistrado extends AvisoAdoptante {
+  id: number
+  solicitud_id: number
+  canal: 'whatsapp'
+  enviado_por: number
+  enviado_por_nombre: string
+  enviado_en: string
 }
 
 // ── Seguimiento después de la adopción (HU-10) ────────────────────────────────
@@ -431,4 +458,45 @@ export interface Periodo {
 export interface PerrosEnTratamiento {
   total: number
   perros: Pick<Perro, 'id' | 'nombre' | 'sexo' | 'raza' | 'foto_url' | 'fecha_ingreso'>[]
+}
+
+// HU-14 · Historias de adopciones exitosas (se muestran en el catálogo público).
+export interface Historia {
+  id: number
+  solicitud_id: number
+  titulo: string
+  relato: string
+  foto_url: string
+  fecha_publicacion: string
+  // false = oculta: no aparece en el catálogo público, pero se conserva.
+  visible: boolean
+  fecha_adopcion: string
+  perro_id: number
+  perro_nombre: string
+  adoptante_nombre: string
+  publicado_por: number
+  publicado_por_nombre: string
+  creado_en: string
+  actualizado_en: string
+}
+
+export interface DatosHistoria {
+  solicitud_id: number
+  titulo: string
+  relato: string
+  foto_url: string
+  fecha_publicacion?: string
+  visible?: boolean
+}
+
+export type CambiosHistoria = Partial<Pick<Historia, 'titulo' | 'relato' | 'foto_url' | 'fecha_publicacion' | 'visible'>>
+
+// Adopción finalizada que todavía no tiene historia.
+export interface AdopcionSinHistoria {
+  solicitud_id: number
+  fecha_adopcion: string
+  perro_id: number
+  perro_nombre: string
+  perro_foto_url: string | null
+  adoptante_nombre: string
 }

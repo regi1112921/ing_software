@@ -3,7 +3,7 @@ info:
   title: HUELLAS · API del albergue
   version: 1.0.0
   description: |
-    API REST de los cuatro microservicios de HUELLAS. Cada servicio corre en su propio puerto,
+    API REST de los cinco microservicios de HUELLAS. Cada servicio corre en su propio puerto,
     por eso cada ruta declara su `servers` (con Docker Compose o `npm run dev` en `backend/`).
 
     **Sesión:** todas las rutas, salvo `POST /auth/login`, `POST /auth/registro`, `GET /health` y las del
@@ -26,6 +26,8 @@ servers:
     description: Veterinaria
   - url: http://localhost:3003
     description: Dashboard
+  - url: http://localhost:3005
+    description: Voluntariado
 
 tags:
   - name: Autenticación
@@ -35,15 +37,23 @@ tags:
   - name: Adopciones
     description: "Servicio de Adopción, puerto 3002 · HU-10 a HU-12"
   - name: Catálogo público
-    description: "Servicio de Adopción, puerto 3002 · HU-09. Sin sesión: lo usa el sitio público (Vercel)."
+    description: "Servicio de Adopción, puerto 3002 · HU-09 y HU-14 (historias). Sin sesión: lo usa el sitio público (Vercel)."
   - name: Solicitudes web
     description: "Servicio de Adopción, puerto 3002 · HU-09. Bandeja privada de las solicitudes del catálogo (administrador y responsable_adopciones)."
   - name: Seguimientos
     description: "Servicio de Adopción, puerto 3002 · HU-10 (seguimiento después de la adopción). Administrador y responsable_adopciones."
+  - name: Avisos
+    description: "Servicio de Adopción, puerto 3002 · HU-13 (aviso al adoptante por WhatsApp al aprobar o rechazar su solicitud). Administrador y responsable_adopciones."
+  - name: Historias
+    description: "Servicio de Adopción, puerto 3002 · HU-14 (historias de adopciones exitosas). Solo rol administrador; la sección pública está en Catálogo público."
+  - name: Fotos
+    description: "Servicio de Adopción, puerto 3002. Subida de fotos de perros e historias a Supabase Storage. Cualquier rol con sesión."
   - name: Veterinaria
     description: "Puerto 3001 · HU-08, HU-09, HU-11 (agenda de citas)"
   - name: Dashboard
-    description: "Puerto 3003 · HU-12 (filtro de fechas), HU-13, HU-14. Solo rol administrador."
+    description: "Puerto 3003 · HU-12 (filtro de fechas), HU-13 a HU-15. Solo rol administrador."
+  - name: Voluntariado
+    description: "Puerto 3005 · HU-16. Solo rol administrador."
   - name: Salud
     description: Todos los servicios exponen `GET /health`.
 
@@ -369,6 +379,10 @@ paths:
       description: |
         HU-12 · RF-17, RF-18, RF-19, RF-20. Transiciones: `en_proceso → aprobada | rechazada`,
         `aprobada → finalizada | rechazada`. Al finalizar, el perro pasa a `adoptado`; al rechazar, vuelve a `disponible`.
+
+        HU-13: al rechazar, `motivo_rechazo` es obligatorio (se le comunica al adoptante; en otros estados se ignora).
+        Al aprobar o rechazar, la respuesta trae `aviso` con el mensaje para el adoptante y el enlace de WhatsApp
+        (no se registra hasta `POST /adopciones/{id}/avisos`). Al finalizar, `aviso` es `null`.
       operationId: cambiarEstadoAdopcion
       requestBody:
         required: true
@@ -380,19 +394,310 @@ paths:
               properties:
                 estado: { type: string, enum: [aprobada, rechazada, finalizada] }
                 fecha: { type: string, format: date, description: Hoy si no se indica. }
-                observaciones: { type: [string, 'null'], maxLength: 2000 }
-            example: { estado: aprobada }
+                observaciones: { type: [string, 'null'], maxLength: 2000, description: Notas internas; no van en el aviso. }
+                motivo_rechazo:
+                  type: [string, 'null']
+                  maxLength: 500
+                  description: HU-13. Obligatorio si `estado` es `rechazada`; va en el aviso al adoptante.
+            examples:
+              aprobar: { value: { estado: aprobada } }
+              rechazar: { value: { estado: rechazada, motivo_rechazo: La vivienda no tiene espacio adecuado para un perro grande. } }
       responses:
         '200':
           description: Estado actualizado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/AdopcionDetalle' }
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AdopcionDetalle'
+                  - type: object
+                    properties:
+                      aviso:
+                        description: HU-13. Mensaje listo para el adoptante (null al finalizar).
+                        oneOf:
+                          - $ref: '#/components/schemas/AvisoBorrador'
+                          - type: 'null'
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
         '404': { $ref: '#/components/responses/NoEncontrado' }
         '409': { $ref: '#/components/responses/Conflicto' }
+
+  # ───────────────────────── Adopción · avisos al adoptante (HU-13) ─────────────────────────
+  /adopciones/{id}/avisos:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Avisos]
+      summary: Avisos enviados al adoptante
+      description: HU-13. Registro de avisos de la adopción (quién, cuándo y el texto), del más reciente al más antiguo.
+      operationId: listarAvisos
+      responses:
+        '200':
+          description: Avisos
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, avisos]
+                properties:
+                  total: { type: integer, example: 1 }
+                  avisos:
+                    type: array
+                    items: { $ref: '#/components/schemas/Aviso' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    post:
+      tags: [Avisos]
+      summary: Registrar el envío de un aviso
+      description: |
+        HU-13. Registra quién envía el aviso, cuándo, a qué teléfono y el texto, y devuelve `enlace_whatsapp`
+        (`https://wa.me/<telefono>?text=...`) para abrirlo con el mensaje ya escrito. El tipo sale del estado:
+        `aprobacion` si está aprobada, `rechazo` si está rechazada; en proceso o finalizada → 409.
+        Sin `mensaje` se envía el sugerido; con `mensaje`, el texto ajustado por el responsable.
+      operationId: registrarAviso
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mensaje: { type: [string, 'null'], maxLength: 2000 }
+            example: {}
+      responses:
+        '201':
+          description: Aviso registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Aviso' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /adopciones/{id}/avisos/borrador:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Avisos]
+      summary: Mensaje sugerido para el adoptante
+      description: |
+        HU-13. Mensaje según el estado actual, sin registrarlo: el de aprobación con los siguientes pasos y el de
+        rechazo con el motivo. El teléfono va en formato internacional sin `+` (se antepone 591 si no tiene código
+        de país). En proceso o finalizada → 409.
+      operationId: borradorAviso
+      responses:
+        '200':
+          description: Mensaje sugerido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvisoBorrador' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  # ───────────────────────── Adopción · fotos ─────────────────────────
+  /fotos:
+    servers: *srvAdopcion
+    post:
+      tags: [Fotos]
+      summary: Subir una foto
+      description: |
+        Sube la imagen a Supabase Storage (bucket público `fotos`) y devuelve su URL pública, que se guarda después
+        como `foto_url` del perro o de la historia. El cuerpo es la imagen tal cual. El tipo se comprueba por el
+        contenido: solo JPG, PNG o WebP (otro → 400). Más de 5 MB → 413. Sin Storage configurado → 503;
+        si Supabase falla → 502.
+      operationId: subirFoto
+      parameters:
+        - { name: carpeta, in: query, required: true, schema: { type: string, enum: [perros, historias] } }
+      requestBody:
+        required: true
+        content:
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/png: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        '201':
+          description: Foto subida
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, ruta, tipo, tamano]
+                properties:
+                  url: { type: string, format: uri, example: 'https://hvwhkdhnlrubmzxzincz.supabase.co/storage/v1/object/public/fotos/perros/0b9c2f1e-1d7a-4f1e-9a51-3c1c7f0d2b11.jpg' }
+                  ruta: { type: string, example: perros/0b9c2f1e-1d7a-4f1e-9a51-3c1c7f0d2b11.jpg }
+                  tipo: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                  tamano: { type: integer, description: Bytes., example: 284512 }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '413':
+          description: La foto supera 5 MB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: La foto no puede superar 5 MB. }
+        '502':
+          description: Supabase Storage no respondió o rechazó la subida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: Falta SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en el servidor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ───────────────────────── Adopción · historias (HU-14) ─────────────────────────
+  /historias:
+    servers: *srvAdopcion
+    get:
+      tags: [Historias]
+      summary: Historias publicadas
+      description: HU-14. Visibles y ocultas, de la más reciente a la más antigua. `visible` filtra por estado.
+      operationId: listarHistorias
+      parameters:
+        - { name: visible, in: query, required: false, schema: { type: string, enum: ['true', 'false'] } }
+      responses:
+        '200':
+          description: Historias
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, historias]
+                properties:
+                  total: { type: integer, example: 1 }
+                  historias: { type: array, items: { $ref: '#/components/schemas/Historia' } }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+    post:
+      tags: [Historias]
+      summary: Publicar una historia
+      description: |
+        HU-14. Foto y relato ligados a una adopción finalizada (una historia por adopción). La fecha de publicación
+        va entre la entrega del perro y hoy (por defecto, hoy). Adopción no finalizada o que ya tiene historia → 409.
+      operationId: publicarHistoria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [solicitud_id, titulo, relato, foto_url]
+              properties:
+                solicitud_id: { type: integer, description: id de la adopción finalizada. }
+                titulo: { type: string, maxLength: 120 }
+                relato: { type: string, maxLength: 2000 }
+                foto_url: { type: string, format: uri, maxLength: 500, pattern: '^https?://' }
+                fecha_publicacion: { type: string, format: date }
+                visible: { type: boolean, default: true }
+            example:
+              solicitud_id: 4
+              titulo: Toby ya tiene familia
+              relato: Toby duerme en el sillón y sale a pasear todas las tardes.
+              foto_url: https://images.dog.ceo/breeds/beagle/n02088364_11136.jpg
+      responses:
+        '201':
+          description: Historia publicada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Historia' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /historias/candidatas:
+    servers: *srvAdopcion
+    get:
+      tags: [Historias]
+      summary: Adopciones finalizadas sin historia
+      description: HU-14. Las que se pueden elegir al publicar, de la entrega más reciente a la más antigua.
+      operationId: adopcionesSinHistoria
+      responses:
+        '200':
+          description: Adopciones
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, adopciones]
+                properties:
+                  total: { type: integer, example: 1 }
+                  adopciones:
+                    type: array
+                    items:
+                      type: object
+                      required: [solicitud_id, fecha_adopcion, perro_id, perro_nombre, perro_foto_url, adoptante_nombre]
+                      properties:
+                        solicitud_id: { type: integer }
+                        fecha_adopcion: { type: string, format: date }
+                        perro_id: { type: integer }
+                        perro_nombre: { type: string, example: Toby }
+                        perro_foto_url: { type: [string, 'null'] }
+                        adoptante_nombre: { type: string, example: Laura Quispe }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /historias/{id}:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Historias]
+      summary: Detalle de una historia
+      operationId: obtenerHistoria
+      responses:
+        '200':
+          description: Historia
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Historia' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    patch:
+      tags: [Historias]
+      summary: Editar, ocultar o volver a mostrar una historia
+      description: |
+        HU-14. Cambia solo los campos enviados (al menos uno). `visible: false` la oculta del catálogo público sin
+        borrarla; `visible: true` la vuelve a mostrar. Las historias no se borran.
+      operationId: actualizarHistoria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                titulo: { type: string, maxLength: 120 }
+                relato: { type: string, maxLength: 2000 }
+                foto_url: { type: string, format: uri, maxLength: 500, pattern: '^https?://' }
+                fecha_publicacion: { type: string, format: date }
+                visible: { type: boolean }
+            example: { visible: false }
+      responses:
+        '200':
+          description: Historia actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Historia' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
 
   # ───────────────────────── Adopción · seguimientos (HU-10) ─────────────────────────
   /adopciones/{id}/seguimientos:
@@ -620,6 +925,28 @@ paths:
               schema: { $ref: '#/components/schemas/PerroPublico' }
         '400': { $ref: '#/components/responses/Validacion' }
         '404': { $ref: '#/components/responses/NoEncontrado' }
+
+  /publico/historias:
+    servers: *srvAdopcion
+    get:
+      tags: [Catálogo público]
+      summary: Historias de adopciones exitosas
+      description: >-
+        HU-14. Solo las historias visibles, de la más reciente a la más antigua (por fecha de publicación).
+        Sin datos del adoptante ni del personal.
+      operationId: catalogoHistorias
+      security: []
+      responses:
+        '200':
+          description: Historias visibles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, historias]
+                properties:
+                  total: { type: integer, example: 1 }
+                  historias: { type: array, items: { $ref: '#/components/schemas/HistoriaPublica' } }
 
   /publico/solicitudes:
     servers: *srvAdopcion
@@ -1216,12 +1543,159 @@ paths:
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
 
+  # ───────────────────────── Voluntariado ─────────────────────────
+  /voluntarios:
+    servers: &srvVol
+      - url: http://localhost:3005
+        description: Voluntariado
+    get:
+      tags: [Voluntariado]
+      summary: Listar voluntarios activos
+      operationId: listarVoluntarios
+      responses:
+        '200':
+          description: Voluntarios registrados
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, voluntarios]
+                properties:
+                  total: { type: integer }
+                  voluntarios:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        nombre_completo: { type: string }
+                        telefono: { type: string }
+                        correo: { type: [string, 'null'] }
+                        disponibilidad: { type: string }
+                        activo: { type: boolean }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+    post:
+      tags: [Voluntariado]
+      summary: Registrar un voluntario
+      operationId: registrarVoluntario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre_completo, telefono, disponibilidad]
+              properties:
+                nombre_completo: { type: string, maxLength: 150 }
+                telefono: { type: string, example: '+59171234567' }
+                correo: { type: [string, 'null'], format: email }
+                disponibilidad: { type: string, maxLength: 500, example: 'Lunes y miércoles por la mañana' }
+      responses:
+        '201':
+          description: Voluntario registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  nombre_completo: { type: string }
+                  telefono: { type: string }
+                  correo: { type: [string, 'null'] }
+                  disponibilidad: { type: string }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /turnos:
+    servers: *srvVol
+    get:
+      tags: [Voluntariado]
+      summary: Consultar los turnos de hasta siete días
+      operationId: calendarioVoluntariado
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Turnos del periodo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [desde, hasta, total, turnos]
+                properties:
+                  desde: { type: string, format: date }
+                  hasta: { type: string, format: date }
+                  total: { type: integer }
+                  turnos: { type: array, items: { type: object } }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+    post:
+      tags: [Voluntariado]
+      summary: Asignar un turno a un voluntario
+      operationId: asignarTurno
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [voluntario_id, fecha, hora_inicio, hora_fin, actividad]
+              properties:
+                voluntario_id: { type: integer }
+                fecha: { type: string, format: date }
+                hora_inicio: { type: string, pattern: '^\d{2}:\d{2}$' }
+                hora_fin: { type: string, pattern: '^\d{2}:\d{2}$' }
+                actividad: { type: string, maxLength: 300 }
+      responses:
+        '201': { description: Turno asignado }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /horas:
+    servers: *srvVol
+    get:
+      tags: [Voluntariado]
+      summary: Obtener horas asignadas por voluntario en un mes
+      operationId: horasMensualesVoluntariado
+      parameters:
+        - name: mes
+          in: query
+          required: true
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$', example: '2026-11' }
+      responses:
+        '200':
+          description: Total de horas por persona
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mes, total, voluntarios]
+                properties:
+                  mes: { type: string }
+                  total: { type: integer }
+                  voluntarios: { type: array, items: { type: object } }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
   # ───────────────────────── Salud ─────────────────────────
   /health:
     get:
       tags: [Salud]
       summary: Estado del servicio
-      description: Disponible en los cuatro puertos; sirve para los healthchecks de Docker.
+      description: Disponible en los cinco puertos; sirve para los healthchecks de Docker.
       operationId: salud
       security: []
       responses:
@@ -1233,7 +1707,7 @@ paths:
                 type: object
                 required: [servicio, estado]
                 properties:
-                  servicio: { type: string, enum: [autenticacion, veterinaria, adopcion, dashboard] }
+                  servicio: { type: string, enum: [autenticacion, veterinaria, adopcion, dashboard, voluntariado] }
                   estado: { type: string, const: ok }
 
 components:
@@ -1268,7 +1742,7 @@ components:
           schema: { $ref: '#/components/schemas/Error' }
           example: { error: Debes iniciar sesión. }
     Prohibido:
-      description: "El rol del usuario no tiene acceso (HU-07). Dashboard: administrador. Adopciones: administrador y responsable_adopciones. Registrar atención: administrador y veterinario."
+      description: "El rol del usuario no tiene acceso (HU-07). Dashboard: administrador. Adopciones: administrador y responsable_adopciones. Historias: administrador. Registrar atención: administrador y veterinario."
       content:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
@@ -1478,6 +1952,7 @@ components:
         fecha_rechazo: { type: [string, 'null'], format: date }
         fecha_adopcion: { type: [string, 'null'], format: date }
         observaciones: { type: [string, 'null'] }
+        motivo_rechazo: { type: [string, 'null'], description: HU-13. Solo en rechazadas; se le comunica al adoptante. }
         creado_en: { type: string, format: date-time }
         actualizado_en: { type: string, format: date-time }
         perro:
@@ -1597,6 +2072,57 @@ components:
         registrado_por_nombre: { type: string, example: María Alvarado }
         creado_en: { type: string, format: date-time }
         actualizado_en: { type: string, format: date-time }
+
+    AvisoBorrador:
+      type: object
+      required: [tipo, telefono, mensaje, enlace_whatsapp]
+      properties:
+        tipo: { type: string, enum: [aprobacion, rechazo] }
+        telefono: { type: string, pattern: '^[0-9]{8,15}$', example: '59168812345', description: Internacional sin +. }
+        mensaje:
+          type: string
+          example: "Hola, Jorge Pérez Ruiz. Le escribimos del albergue Huellas sobre su solicitud para adoptar a Luna.\n\nLamentamos informarle que esta vez no pudimos aprobarla.\nMotivo: La vivienda no tiene espacio adecuado para un perro de su tamaño.\n\nGracias por querer darle un hogar a uno de nuestros perros; puede volver a postular cuando quiera."
+        enlace_whatsapp: { type: string, format: uri, example: 'https://wa.me/59168812345?text=Hola%2C%20Jorge...' }
+
+    Aviso:
+      allOf:
+        - $ref: '#/components/schemas/AvisoBorrador'
+        - type: object
+          required: [id, solicitud_id, canal, enviado_por, enviado_por_nombre, enviado_en]
+          properties:
+            id: { type: integer }
+            solicitud_id: { type: integer, description: id de la adopción. }
+            canal: { type: string, enum: [whatsapp] }
+            enviado_por: { type: integer }
+            enviado_por_nombre: { type: string, example: María Alvarado }
+            enviado_en: { type: string, format: date-time }
+
+    HistoriaPublica:
+      type: object
+      required: [id, titulo, relato, foto_url, fecha_publicacion, perro_nombre, fecha_adopcion]
+      properties:
+        id: { type: integer }
+        titulo: { type: string, example: Rocky encontró su patio para correr }
+        relato: { type: string, example: Rocky llegó al albergue con miedo a la gente y hoy corre todas las mañanas en su patio. }
+        foto_url: { type: string, format: uri }
+        fecha_publicacion: { type: string, format: date, example: '2024-01-25' }
+        perro_nombre: { type: string, example: Rocky }
+        fecha_adopcion: { type: string, format: date, example: '2023-12-15' }
+
+    Historia:
+      allOf:
+        - $ref: '#/components/schemas/HistoriaPublica'
+        - type: object
+          required: [solicitud_id, visible, perro_id, adoptante_nombre, publicado_por, publicado_por_nombre, creado_en, actualizado_en]
+          properties:
+            solicitud_id: { type: integer, description: id de la adopción. }
+            visible: { type: boolean, description: false = oculta en el catálogo público. }
+            perro_id: { type: integer }
+            adoptante_nombre: { type: string, example: Ana García López }
+            publicado_por: { type: integer }
+            publicado_por_nombre: { type: string, example: Patricia Gómez }
+            creado_en: { type: string, format: date-time }
+            actualizado_en: { type: string, format: date-time }
 
     AdopcionSinSeguimiento:
       type: object

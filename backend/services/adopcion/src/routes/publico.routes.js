@@ -1,13 +1,15 @@
 import { Router } from 'express'
 import { limitarPeticiones, limiteSolicitudesPublicas } from '@huellas/shared'
 
-// HU-09 · Catálogo público. Rutas SIN sesión: solo leen perros disponibles
+// HU-09 · Catálogo público. Rutas SIN sesión: solo leen perros disponibles e historias visibles (HU-14)
 // y reciben pre-solicitudes (limitadas por IP para frenar el spam).
 export function crearPublicoRoutes(controller, { limite = limiteSolicitudesPublicas() } = {}) {
   const router = Router()
   router.get('/filtros', controller.filtros)
   router.get('/perros', controller.listar)
   router.get('/perros/:id', controller.obtener)
+  // HU-14: historias de adopciones exitosas (solo las visibles).
+  router.get('/historias', controller.historias)
   router.post(
     '/solicitudes',
     limitarPeticiones({
