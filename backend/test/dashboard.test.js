@@ -126,6 +126,39 @@ describe('Servicio de Dashboard', () => {
     })
   })
 
+  describe('HU-15 · Reportes exportables', () => {
+    it('solo el administrador puede generar reportes', async () => {
+      for (const correo of [PERSONAL, VETERINARIO]) {
+        const otro = entorno.api('dashboard', await entorno.iniciarSesion(correo))
+        assert.equal((await otro.get('/reportes?tipo=perros&formato=excel')).status, 403)
+      }
+    })
+
+    it('exporta perros en Excel-compatible CSV y aplica el rango de fechas', async () => {
+      const respuesta = await dashboard.get('/reportes?tipo=perros&formato=excel&desde=2020-01-01&hasta=2026-12-31')
+      assert.equal(respuesta.status, 200)
+      assert.match(respuesta.headers['content-type'], /text\/csv/)
+      assert.match(respuesta.headers['content-disposition'], /perros\.csv/)
+      assert.match(respuesta.text, /Nombre/)
+      assert.match(respuesta.text, /Max/)
+    })
+
+    it('exporta adopciones en PDF válido', async () => {
+      const respuesta = await dashboard.get('/reportes?tipo=adopciones&formato=pdf')
+      assert.equal(respuesta.status, 200)
+      assert.match(respuesta.headers['content-type'], /application\/pdf/)
+      assert.match(respuesta.headers['content-disposition'], /adopciones\.pdf/)
+      assert.ok(respuesta.body.toString('ascii').startsWith('%PDF-'))
+      assert.match(respuesta.body.toString('ascii'), /%%EOF/)
+    })
+
+    it('rechaza tipos, formatos y rangos inválidos', async () => {
+      assert.equal((await dashboard.get('/reportes?tipo=otro&formato=pdf')).status, 400)
+      assert.equal((await dashboard.get('/reportes?tipo=perros&formato=html')).status, 400)
+      assert.equal((await dashboard.get('/reportes?tipo=perros&formato=pdf&desde=2026-12-31&hasta=2020-01-01')).status, 400)
+    })
+  })
+
   describe('HU-14 · Perros en tratamiento', () => {
     it('lista los perros en tratamiento del ingreso más antiguo al más reciente', async () => {
       const respuesta = await dashboard.get('/perros-en-tratamiento')

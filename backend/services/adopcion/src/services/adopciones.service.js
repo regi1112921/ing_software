@@ -138,11 +138,13 @@ export function crearAdopcionesService({ pool, adopciones, adoptantes, perros, s
           observaciones: cambio.observaciones,
           motivoRechazo: cambio.estado === 'rechazada' ? cambio.motivo_rechazo : null,
         })
+
       })
 
       // HU-13: al aprobar o rechazar, el mensaje para el adoptante ya va listo.
       const adopcion = await obtener(id)
       return { ...adopcion, aviso: generarAviso(adopcion) }
     },
+
   }
 }
