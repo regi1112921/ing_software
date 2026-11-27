@@ -425,3 +425,44 @@ export interface PerrosEnTratamiento {
   total: number
   perros: Pick<Perro, 'id' | 'nombre' | 'sexo' | 'raza' | 'foto_url' | 'fecha_ingreso'>[]
 }
+
+// HU-14 · Historias de adopciones exitosas (se muestran en el catálogo público).
+export interface Historia {
+  id: number
+  solicitud_id: number
+  titulo: string
+  relato: string
+  foto_url: string
+  fecha_publicacion: string
+  // false = oculta: no aparece en el catálogo público, pero se conserva.
+  visible: boolean
+  fecha_adopcion: string
+  perro_id: number
+  perro_nombre: string
+  adoptante_nombre: string
+  publicado_por: number
+  publicado_por_nombre: string
+  creado_en: string
+  actualizado_en: string
+}
+
+export interface DatosHistoria {
+  solicitud_id: number
+  titulo: string
+  relato: string
+  foto_url: string
+  fecha_publicacion?: string
+  visible?: boolean
+}
+
+export type CambiosHistoria = Partial<Pick<Historia, 'titulo' | 'relato' | 'foto_url' | 'fecha_publicacion' | 'visible'>>
+
+// Adopción finalizada que todavía no tiene historia.
+export interface AdopcionSinHistoria {
+  solicitud_id: number
+  fecha_adopcion: string
+  perro_id: number
+  perro_nombre: string
+  perro_foto_url: string | null
+  adoptante_nombre: string
+}

@@ -3,6 +3,10 @@ import type {
   Adopcion,
   AvisoAdoptante,
   AvisoRegistrado,
+  AdopcionSinHistoria,
+  CambiosHistoria,
+  DatosHistoria,
+  Historia,
   AdopcionSinSeguimiento,
   DatosSeguimiento,
   Seguimiento,
@@ -45,6 +49,14 @@ export const adopcionApi = {
     http<{ total: number; avisos: AvisoRegistrado[] }>(`${BASE}/adopciones/${adopcionId}/avisos`),
   registrarAviso: (adopcionId: number | string, mensaje?: string) =>
     http<AvisoRegistrado>(`${BASE}/adopciones/${adopcionId}/avisos`, { method: 'POST', body: { mensaje } }),
+
+  // Historias de adopciones exitosas (HU-14)
+  listarHistorias: () => http<{ total: number; historias: Historia[] }>(`${BASE}/historias`),
+  listarAdopcionesSinHistoria: () =>
+    http<{ total: number; adopciones: AdopcionSinHistoria[] }>(`${BASE}/historias/candidatas`),
+  publicarHistoria: (datos: DatosHistoria) => http<Historia>(`${BASE}/historias`, { method: 'POST', body: datos }),
+  actualizarHistoria: (id: number | string, cambios: CambiosHistoria) =>
+    http<Historia>(`${BASE}/historias/${id}`, { method: 'PATCH', body: cambios }),
 
   // Seguimiento después de la adopción (HU-10)
   listarSeguimientos: (adopcionId: number | string) =>
