@@ -1,9 +1,12 @@
-# huellas-catalogo · Catálogo público de perros en adopción (HU-09)
+# huellas-catalogo · Catálogo público de perros en adopción (HU-09, HU-14)
 
 Sitio público, **sin inicio de sesión**, separado del panel interno (`frontend/`). Muestra solo los perros
 `disponible`, permite filtrarlos por **tamaño, edad y sexo** y, desde la ficha de cada perro, enviar una
 **solicitud de adopción**. La solicitud llega al panel interno (menú *Solicitudes web*), donde el responsable
 de adopciones contacta a la persona y la convierte en una adopción o la descarta.
+
+En **Historias** (`/historias`, HU-14) muestra las adopciones exitosas que publica la administración: foto, título
+y relato de cada perro en su nuevo hogar, de la más reciente a la más antigua.
 
 React 19 + TypeScript + Vite + React Router + Tailwind CSS v4 (mismos colores que el panel).
 
@@ -16,6 +19,7 @@ Solo las rutas públicas del servicio de **Adopción** (puerto 3002):
 | GET | `/publico/filtros` | Opciones de tamaño, sexo y rango de edad |
 | GET | `/publico/perros?tamano=&sexo=&edad=` | Perros disponibles (datos públicos) |
 | GET | `/publico/perros/:id` | Ficha (404 si ya no está disponible) |
+| GET | `/publico/historias` | Historias de adopciones exitosas visibles (HU-14) |
 | POST | `/publico/solicitudes` | Pre-solicitud de adopción (límite por IP, campo trampa para bots) |
 
 El resto de la API sigue exigiendo sesión. Detalle en [`docs/api/openapi.yaml`](../docs/api/openapi.yaml).

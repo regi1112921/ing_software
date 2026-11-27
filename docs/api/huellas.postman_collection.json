@@ -2972,6 +2972,366 @@
               }
             }
           ]
+        },
+        {
+          "name": "Adopciones finalizadas sin historia (HU-14)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias/candidatas",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias",
+                "candidatas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "HU-14: solo la administración gestiona las historias."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('la adopción finalizada todavía no tiene historia', () => pm.expect(pm.response.json().adopciones.map(a => a.solicitud_id)).to.include(pm.collectionVariables.get('adopcionId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar historia como responsable de adopciones → 403 (HU-14)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitud_id\": {{adopcionId}},\n  \"titulo\": \"Un nuevo hogar\",\n  \"relato\": \"Después de unas semanas en el albergue, ya duerme en su propia cama y sale a pasear todas las tardes.\",\n  \"foto_url\": \"https://images.dog.ceo/breeds/beagle/n02088364_11136.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar historia (HU-14)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitud_id\": {{adopcionId}},\n  \"titulo\": \"Un nuevo hogar\",\n  \"relato\": \"Después de unas semanas en el albergue, ya duerme en su propia cama y sale a pasear todas las tardes.\",\n  \"foto_url\": \"https://images.dog.ceo/breeds/beagle/n02088364_11136.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "HU-14: título, relato y foto de una adopción finalizada. Sin fecha_publicacion se usa hoy."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const h = pm.response.json();",
+                  "pm.test('ligada a la adopción, con foto y visible', () => { pm.expect(h.solicitud_id).to.eql(pm.collectionVariables.get('adopcionId')); pm.expect(h.foto_url).to.match(/^https:/); pm.expect(h.visible).to.eql(true); pm.expect(h.publicado_por_nombre).to.be.a('string'); });",
+                  "pm.collectionVariables.set('historiaId', h.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Otra historia de la misma adopción → 409 (HU-14)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitud_id\": {{adopcionId}},\n  \"titulo\": \"Un nuevo hogar\",\n  \"relato\": \"Después de unas semanas en el albergue, ya duerme en su propia cama y sale a pasear todas las tardes.\",\n  \"foto_url\": \"https://images.dog.ceo/breeds/beagle/n02088364_11136.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historias en el catálogo público (sin sesión, HU-14)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "historias"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json().historias;",
+                  "pm.test('incluye la historia publicada', () => pm.expect(lista.map(h => h.id)).to.include(pm.collectionVariables.get('historiaId')));",
+                  "pm.test('de la más reciente a la más antigua', () => { const f = lista.map(h => h.fecha_publicacion); pm.expect(f).to.eql([...f].sort().reverse()); });",
+                  "pm.test('sin datos del adoptante', () => lista.forEach(h => pm.expect(h).to.not.have.property('adoptante_nombre')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ocultar la historia (HU-14)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias/{{historiaId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias",
+                "{{historiaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visible\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('queda oculta, no borrada', () => pm.expect(pm.response.json().visible).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La historia oculta no sale en el catálogo (HU-14)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "historias"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ya no aparece', () => pm.expect(pm.response.json().historias.map(h => h.id)).to.not.include(pm.collectionVariables.get('historiaId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Volver a mostrar la historia (HU-14)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias/{{historiaId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias",
+                "{{historiaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visible\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('vuelve a estar visible', () => pm.expect(pm.response.json().visible).to.eql(true));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -3434,6 +3794,10 @@
     },
     {
       "key": "seguimientoId",
+      "value": ""
+    },
+    {
+      "key": "historiaId",
       "value": ""
     },
     {
