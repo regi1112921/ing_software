@@ -124,7 +124,7 @@ abierta, la app vuelve al inicio de sesión con el aviso "Tu sesión expiró".
 | `/registro` | Crear cuenta (siempre con rol responsable de adopciones; deja la sesión iniciada) | — |
 | `/` | Dashboard (solo administración; los demás roles van a `/perros`). Filtro de fechas con atajos (este mes, por defecto; últimos 3 meses; este año) o rango propio, guardado en la URL (`?desde=&hasta=`): ingresos, adopciones, solicitudes y atenciones del periodo y gráfico de ingresos y adopciones por día o por mes. Aparte, el estado actual: 4 indicadores, distribución y perros en tratamiento | HU-12, HU-13, HU-14 |
 | `/perros` | Listado con búsqueda y filtro por estado | HU-06 |
-| `/perros/nuevo` · `/perros/:id/editar` | Registrar / editar perro | HU-04, HU-05 |
+| `/perros/nuevo` · `/perros/:id/editar` | Registrar / editar perro. **Subir foto** la guarda en Supabase Storage y llena la URL (también se puede pegar un enlace) | HU-04, HU-05 |
 | `/perros/:id` | Ficha con pestañas Información, Historial médico y Adopción (esta última no la ve veterinaria) | HU-07, HU-08 |
 | `/perros/:id/atenciones/nueva` | Registrar atención médica (administración y veterinaria) | HU-09 |
 | `/controles` | Controles pendientes: vacunas y desparasitaciones vencidas (resaltadas) o próximas, con rango de 7, 30, 60 o 90 días (administración y veterinaria) | HU-08 |

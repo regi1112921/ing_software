@@ -25,6 +25,7 @@ reset_desarrollo.sql  ⚠ Borra todas las tablas y datos
 | `seguridad/01_permisos.sql` | — | RLS y revocación de `anon` / `authenticated` |
 | `seeds/01_datos_prueba.sql` | — | 4 usuarios, 8 perros, 3 adoptantes, 3 solicitudes, 5 consultas, 6 vacunas, 4 desparasitaciones, 3 seguimientos, 5 citas, 1 aviso al adoptante, 1 historia de adopción |
 | `tests/01_verificaciones.sql` | — | 72 verificaciones |
+| `supabase/01_storage_fotos.sql` | Servicio de Adopción | **Solo Supabase:** bucket público `fotos` de Storage (máx. 5 MB, JPG/PNG/WebP) para las fotos subidas desde el panel. Solo sube el backend, con la service_role key |
 
 **Catálogos:** para agregar una raza basta con
 `insert into razas (nombre) values ('Akita');`. Los estados y tamaños también son filas,

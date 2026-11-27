@@ -58,8 +58,11 @@ type Metodo = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 export async function http<T>(url: string, { method = 'GET', body }: { method?: Metodo; body?: unknown } = {}): Promise<T> {
   const token = tokenGuardado.leer()
+  // Un archivo (Blob/File) va tal cual, con su tipo; lo demás, como JSON.
+  const esArchivo = body instanceof Blob
   const headers: Record<string, string> = {}
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  if (esArchivo) headers['Content-Type'] = body.type || 'application/octet-stream'
+  else if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (token) headers.Authorization = `Bearer ${token}`
 
   let respuesta: Response
@@ -67,7 +70,7 @@ export async function http<T>(url: string, { method = 'GET', body }: { method?: 
     respuesta = await fetch(url, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: esArchivo ? body : body !== undefined ? JSON.stringify(body) : undefined,
     })
   } catch {
     throw new ErrorApi(0, 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.')

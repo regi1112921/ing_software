@@ -23,6 +23,10 @@ x-entorno-backend: &entorno-backend
   # El catálogo llega a Adopción a través de nginx: 1 salto de proxy (para el límite por IP).
   TRUST_PROXY: "1"
   TZ: America/La_Paz
+  # Subida de fotos a Supabase Storage (las toma del .env de la raíz; vacías = desactivada,
+  # y en el panel se sigue pudiendo pegar la URL de la foto).
+  SUPABASE_URL: ${SUPABASE_URL:-}
+  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
 
 services:
   db:

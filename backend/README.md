@@ -138,6 +138,14 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 | POST | `/historias` | HU-14 | `{ solicitud_id, titulo, relato, foto_url, fecha_publicacion?, visible? }`. Solo adopciones finalizadas y una por adopción (409); la fecha va de la entrega a hoy (por defecto, hoy) |
 | PATCH | `/historias/:id` | HU-14 | Cambia solo lo enviado (`titulo`, `relato`, `foto_url`, `fecha_publicacion`, `visible`). `visible: false` la oculta del catálogo sin borrarla |
 
+### Fotos — servicio de Adopción, http://localhost:3002
+Cualquier rol con sesión. Las fotos se guardan en Supabase Storage (bucket público `fotos`); en la BD
+solo queda su URL pública, en `perros.foto_url` o `historias_adopcion.foto_url`.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/fotos?carpeta=perros\|historias` | Cuerpo: la imagen tal cual (`Content-Type: image/jpeg`, `image/png` o `image/webp`). Responde `{ url, ruta, tipo, tamano }` (201). El tipo se comprueba por el contenido (otro formato → 400); más de 5 MB → 413; sin `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` → 503; si Supabase falla → 502 |
+
 ### Catálogo público (HU-09) — servicio de Adopción, http://localhost:3002
 Rutas **sin sesión** que usa el sitio [`catalogo/`](../catalogo/README.md):
 

@@ -95,6 +95,11 @@ Elige una:
 - **Usar Supabase**: copia `.env.example` a `.env`, pega la cadena del *Session pooler* y sigue
   [database/README.md](database/README.md) para crear la estructura y asignar contraseñas.
 
+**Subir fotos (opcional):** el botón *Subir foto* guarda las imágenes en Supabase Storage. Crea el bucket una
+vez con [database/supabase/01_storage_fotos.sql](database/supabase/01_storage_fotos.sql) y en el `.env` pon
+`SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API). Sin ellas, se pega la URL de la foto.
+
+### 2. Backend (4 servicios)
 ### 2. Backend (5 servicios)
 
 ```bash

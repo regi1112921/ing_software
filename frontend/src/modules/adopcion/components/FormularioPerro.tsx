@@ -8,6 +8,7 @@ import FotoPerro from '@/shared/components/FotoPerro'
 import MensajeError from '@/shared/components/MensajeError'
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO, CLASE_INPUT, CLASE_SELECT, TARJETA } from '@/shared/utils/estilos'
 import { hoy } from '@/shared/utils/formato'
+import SubirFoto from './SubirFoto'
 
 type ModoEdad = 'fecha' | 'aproximada' | 'desconocida'
 
@@ -300,16 +301,19 @@ export default function FormularioPerro({ catalogos, perro, volverA, onGuardar }
         <h2 className="font-bold text-gray-800 mb-4">Foto</h2>
         <div className="flex flex-col sm:flex-row gap-5 sm:items-start">
           <FotoPerro url={form.foto_url.trim() || null} nombre="Vista previa" className="size-28 rounded-xl flex-shrink-0" />
-          <Campo etiqueta="URL de la foto" error={errores.foto_url} ayuda="Enlace público que empiece por http:// o https://" className="flex-1">
-            <input
-              type="url"
-              maxLength={500}
-              value={form.foto_url}
-              onChange={(e) => cambiar('foto_url', e.target.value)}
-              className={CLASE_INPUT}
-              placeholder="https://…"
-            />
-          </Campo>
+          <div className="flex-1 space-y-4">
+            <SubirFoto carpeta="perros" onSubida={(url) => cambiar('foto_url', url)} />
+            <Campo etiqueta="URL de la foto" error={errores.foto_url} ayuda="Se llena al subir la foto; también puedes pegar un enlace que empiece por http:// o https://">
+              <input
+                type="url"
+                maxLength={500}
+                value={form.foto_url}
+                onChange={(e) => cambiar('foto_url', e.target.value)}
+                className={CLASE_INPUT}
+                placeholder="https://…"
+              />
+            </Campo>
+          </div>
         </div>
       </section>
 

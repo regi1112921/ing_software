@@ -74,3 +74,12 @@ export function limiteSolicitudesPublicas() {
     ventanaMs: entero('SOLICITUDES_PUBLICAS_VENTANA_MINUTOS', 60) * 60 * 1000,
   }
 }
+
+// Subida de fotos a Supabase Storage (bucket público). null si falta la URL o la clave:
+// en ese caso la subida responde 503 y se sigue pudiendo pegar la URL de la foto.
+export function configAlmacenamiento() {
+  const url = process.env.SUPABASE_URL
+  const clave = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !clave) return null
+  return { url: url.replace(/\/+$/, ''), clave, bucket: process.env.SUPABASE_BUCKET_FOTOS || 'fotos' }
+}

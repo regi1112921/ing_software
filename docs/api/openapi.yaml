@@ -46,6 +46,8 @@ tags:
     description: "Servicio de Adopción, puerto 3002 · HU-13 (aviso al adoptante por WhatsApp al aprobar o rechazar su solicitud). Administrador y responsable_adopciones."
   - name: Historias
     description: "Servicio de Adopción, puerto 3002 · HU-14 (historias de adopciones exitosas). Solo rol administrador; la sección pública está en Catálogo público."
+  - name: Fotos
+    description: "Servicio de Adopción, puerto 3002. Subida de fotos de perros e historias a Supabase Storage. Cualquier rol con sesión."
   - name: Veterinaria
     description: "Puerto 3001 · HU-08, HU-09, HU-11 (agenda de citas)"
   - name: Dashboard
@@ -501,6 +503,58 @@ paths:
         '403': { $ref: '#/components/responses/Prohibido' }
         '404': { $ref: '#/components/responses/NoEncontrado' }
         '409': { $ref: '#/components/responses/Conflicto' }
+
+  # ───────────────────────── Adopción · fotos ─────────────────────────
+  /fotos:
+    servers: *srvAdopcion
+    post:
+      tags: [Fotos]
+      summary: Subir una foto
+      description: |
+        Sube la imagen a Supabase Storage (bucket público `fotos`) y devuelve su URL pública, que se guarda después
+        como `foto_url` del perro o de la historia. El cuerpo es la imagen tal cual. El tipo se comprueba por el
+        contenido: solo JPG, PNG o WebP (otro → 400). Más de 5 MB → 413. Sin Storage configurado → 503;
+        si Supabase falla → 502.
+      operationId: subirFoto
+      parameters:
+        - { name: carpeta, in: query, required: true, schema: { type: string, enum: [perros, historias] } }
+      requestBody:
+        required: true
+        content:
+          image/jpeg: { schema: { type: string, format: binary } }
+          image/png: { schema: { type: string, format: binary } }
+          image/webp: { schema: { type: string, format: binary } }
+      responses:
+        '201':
+          description: Foto subida
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url, ruta, tipo, tamano]
+                properties:
+                  url: { type: string, format: uri, example: 'https://hvwhkdhnlrubmzxzincz.supabase.co/storage/v1/object/public/fotos/perros/0b9c2f1e-1d7a-4f1e-9a51-3c1c7f0d2b11.jpg' }
+                  ruta: { type: string, example: perros/0b9c2f1e-1d7a-4f1e-9a51-3c1c7f0d2b11.jpg }
+                  tipo: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                  tamano: { type: integer, description: Bytes., example: 284512 }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '413':
+          description: La foto supera 5 MB
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: La foto no puede superar 5 MB. }
+        '502':
+          description: Supabase Storage no respondió o rechazó la subida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '503':
+          description: Falta SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en el servidor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
 
   # ───────────────────────── Adopción · historias (HU-14) ─────────────────────────
   /historias:

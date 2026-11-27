@@ -15,6 +15,7 @@ import { crearSolicitudesPublicasService } from './services/solicitudesPublicas.
 import { crearSeguimientosService } from './services/seguimientos.service.js'
 import { crearAvisosService } from './services/avisos.service.js'
 import { crearHistoriasService } from './services/historias.service.js'
+import { crearFotosService } from './services/fotos.service.js'
 import { crearCatalogosController } from './controllers/catalogos.controller.js'
 import { crearPerrosController } from './controllers/perros.controller.js'
 import { crearAdopcionesController } from './controllers/adopciones.controller.js'
@@ -23,6 +24,7 @@ import { crearSolicitudesPublicasController } from './controllers/solicitudesPub
 import { crearSeguimientosController } from './controllers/seguimientos.controller.js'
 import { crearAvisosController } from './controllers/avisos.controller.js'
 import { crearHistoriasController } from './controllers/historias.controller.js'
+import { crearFotosController } from './controllers/fotos.controller.js'
 import { crearCatalogosRoutes } from './routes/catalogos.routes.js'
 import { crearPerrosRoutes } from './routes/perros.routes.js'
 import { crearAdopcionesRoutes } from './routes/adopciones.routes.js'
@@ -31,9 +33,11 @@ import { crearSolicitudesPublicasRoutes } from './routes/solicitudesPublicas.rou
 import { crearSeguimientosDeAdopcionRoutes, crearSeguimientosRoutes } from './routes/seguimientos.routes.js'
 import { crearAvisosRoutes } from './routes/avisos.routes.js'
 import { crearHistoriasRoutes } from './routes/historias.routes.js'
+import { crearFotosRoutes } from './routes/fotos.routes.js'
 
 // limitePublico: opcional, para cambiar el límite de solicitudes del catálogo (pruebas).
-export function crearAppAdopcion({ pool, verificarSesion, limitePublico }) {
+// almacen: dónde se suben las fotos (Supabase Storage); null = subida desactivada (503).
+export function crearAppAdopcion({ pool, verificarSesion, limitePublico, almacen = null }) {
   const catalogos = crearCatalogosRepository(pool)
   const perros = crearPerrosRepository(pool)
   const adoptantes = crearAdoptantesRepository()
@@ -60,6 +64,8 @@ export function crearAppAdopcion({ pool, verificarSesion, limitePublico }) {
         '/publico',
         crearPublicoRoutes(crearPublicoController(publicoService), limitePublico ? { limite: limitePublico } : undefined),
       )
+      // Subida de fotos de perros e historias (todos los roles con sesión pueden editar perros).
+      app.use('/fotos', exigirSesion, crearFotosRoutes(crearFotosController(crearFotosService({ almacen }))))
       app.use('/catalogos', exigirSesion, crearCatalogosRoutes(crearCatalogosController(catalogos)))
       app.use('/perros', exigirSesion, crearPerrosRoutes(crearPerrosController(perrosService)))
       // HU-10: seguimientos después de la adopción (antes que /adopciones/:id para no chocar).

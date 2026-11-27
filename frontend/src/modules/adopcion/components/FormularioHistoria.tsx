@@ -8,6 +8,7 @@ import FotoPerro from '@/shared/components/FotoPerro'
 import MensajeError from '@/shared/components/MensajeError'
 import { BOTON_PRIMARIO, BOTON_SECUNDARIO, CLASE_INPUT, CLASE_SELECT, CLASE_TEXTAREA } from '@/shared/utils/estilos'
 import { formatearFecha, hoy } from '@/shared/utils/formato'
+import SubirFoto from './SubirFoto'
 
 interface Props {
   // Al editar: la historia publicada. Al publicar: las adopciones finalizadas sin historia.
@@ -151,28 +152,37 @@ export default function FormularioHistoria({ historia, adopciones = [], onCancel
       </Campo>
 
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-4 items-start">
-        <Campo
-          etiqueta="Foto (URL)"
-          obligatorio
-          error={errores.foto_url}
-          ayuda="De preferencia, una foto del perro en su nuevo hogar."
-        >
-          <input
-            type="url"
-            value={fotoUrl}
-            maxLength={500}
-            onChange={(e) => {
-              setFotoUrl(e.target.value)
+        <div className="space-y-3">
+          <SubirFoto
+            carpeta="historias"
+            onSubida={(url) => {
+              setFotoUrl(url)
               limpiarError('foto_url')
             }}
-            className={CLASE_INPUT}
-            placeholder="https://…"
           />
-        </Campo>
+          <Campo
+            etiqueta="Foto (URL)"
+            obligatorio
+            error={errores.foto_url}
+            ayuda="De preferencia, una foto del perro en su nuevo hogar. Se llena al subirla; también puedes pegar un enlace."
+          >
+            <input
+              type="url"
+              value={fotoUrl}
+              maxLength={500}
+              onChange={(e) => {
+                setFotoUrl(e.target.value)
+                limpiarError('foto_url')
+              }}
+              className={CLASE_INPUT}
+              placeholder="https://…"
+            />
+          </Campo>
+        </div>
         <FotoPerro
           url={esUrl(fotoUrl.trim()) ? fotoUrl.trim() : null}
           nombre={`Vista previa de la foto de ${nombrePerro}`}
-          className="size-24 rounded-xl sm:mt-7"
+          className="size-24 rounded-xl"
         />
       </div>
 
