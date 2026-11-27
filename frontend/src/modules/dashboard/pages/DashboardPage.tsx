@@ -117,7 +117,7 @@ export default function DashboardPage() {
               <h2 id="titulo-periodo" className="font-bold text-gray-800 mb-3">
                 En el periodo <span className="font-semibold text-gray-500">· {describirPeriodo(resumen.periodo)}</span>
               </h2>
-              <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4">
                 <TarjetaIndicador
                   etiqueta="Ingresos"
                   valor={resumen.periodo.ingresos}
@@ -149,6 +149,22 @@ export default function DashboardPage() {
                   claseTarjeta="bg-white border-gray-200"
                   claseIcono="text-gray-400"
                   a="/perros"
+                />
+                <TarjetaIndicador
+                  etiqueta="Donaciones recibidas"
+                  valor={resumen.periodo.donaciones}
+                  icono={HandCoins}
+                  claseTarjeta="bg-amber-50 border-amber-200"
+                  claseIcono="text-amber-600"
+                  a="/donaciones"
+                />
+                <TarjetaIndicador
+                  etiqueta="Dinero recibido (Bs)"
+                  valor={resumen.periodo.dinero_donado_bs.toFixed(2)}
+                  icono={Banknote}
+                  claseTarjeta="bg-emerald-50 border-emerald-200"
+                  claseIcono="text-emerald-600"
+                  a="/donaciones"
                 />
               </div>
             </section>

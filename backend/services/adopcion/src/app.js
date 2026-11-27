@@ -67,6 +67,8 @@ export function crearAppAdopcion({ pool, verificarSesion, limitePublico, almacen
       // Subida de fotos de perros e historias (todos los roles con sesión pueden editar perros).
       app.use('/fotos', exigirSesion, crearFotosRoutes(crearFotosController(crearFotosService({ almacen }))))
       app.use('/catalogos', exigirSesion, crearCatalogosRoutes(crearCatalogosController(catalogos)))
+      // HU-18: registro de donaciones, exclusivo de administración. No modifica inventario.
+      app.use('/donaciones', exigirSesion, exigirRol(ROLES.administrador), crearDonacionesRoutes(crearDonacionesController(donacionesService)))
       app.use('/perros', exigirSesion, crearPerrosRoutes(crearPerrosController(perrosService)))
       // HU-10: seguimientos después de la adopción (antes que /adopciones/:id para no chocar).
       app.use(

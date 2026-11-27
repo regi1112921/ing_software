@@ -43,6 +43,11 @@ export default function App() {
                 <Route path="voluntariado" element={<VoluntariadoPage />} />
               </Route>
 
+              {/* HU-18: administración registra donaciones ya recibidas. */}
+              <Route element={<RutaPorRol permiso="donaciones" redirigirA="/perros" />}>
+                <Route path="donaciones" element={<DonacionesPage />} />
+              </Route>
+
               <Route path="perros" element={<PerrosPage />} />
               <Route path="perros/nuevo" element={<PerroFormPage />} />
               <Route

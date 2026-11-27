@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 interface Props {
   etiqueta: string
-  valor: number
+  valor: number | string
   icono: ComponentType<{ size?: number; className?: string }>
   claseTarjeta: string
   claseIcono: string
