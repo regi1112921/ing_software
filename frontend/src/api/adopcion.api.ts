@@ -24,6 +24,8 @@ import type {
 
 const BASE = '/api/adopcion'
 
+export type CarpetaFoto = 'perros' | 'historias'
+
 export const adopcionApi = {
   // Catálogos (HU-04)
   obtenerCatalogos: () => http<Catalogos>(`${BASE}/catalogos`),
@@ -49,6 +51,13 @@ export const adopcionApi = {
     http<{ total: number; avisos: AvisoRegistrado[] }>(`${BASE}/adopciones/${adopcionId}/avisos`),
   registrarAviso: (adopcionId: number | string, mensaje?: string) =>
     http<AvisoRegistrado>(`${BASE}/adopciones/${adopcionId}/avisos`, { method: 'POST', body: { mensaje } }),
+
+  // Subida de fotos a Supabase Storage: devuelve la URL pública para foto_url.
+  subirFoto: (archivo: File, carpeta: CarpetaFoto) =>
+    http<{ url: string; ruta: string; tipo: string; tamano: number }>(`${BASE}/fotos${query({ carpeta })}`, {
+      method: 'POST',
+      body: archivo,
+    }),
 
   // Historias de adopciones exitosas (HU-14)
   listarHistorias: () => http<{ total: number; historias: Historia[] }>(`${BASE}/historias`),
