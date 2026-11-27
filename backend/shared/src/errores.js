@@ -48,6 +48,11 @@ const MENSAJES_RESTRICCION = {
   ck_citas_motivo: [400, 'El motivo es obligatorio (máximo 200 caracteres).'],
   citas_perro_id_fkey: [400, 'El perro indicado no existe.'],
   citas_veterinario_id_fkey: [400, 'El veterinario indicado no existe.'],
+  uq_historias_solicitud: [409, 'Esta adopción ya tiene una historia publicada.'],
+  ck_historias_titulo: [400, 'El título es obligatorio (máximo 120 caracteres).'],
+  ck_historias_relato: [400, 'El relato es obligatorio (máximo 2000 caracteres).'],
+  ck_historias_foto_url: [400, 'La foto debe ser una URL que empiece por http:// o https://.'],
+  historias_adopcion_solicitud_id_fkey: [400, 'La adopción indicada no existe.'],
 }
 
 // Traduce errores de PostgreSQL (código SQLSTATE) a respuestas HTTP.
