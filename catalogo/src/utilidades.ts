@@ -11,6 +11,12 @@ export function formatearEdad(edadMeses: number | null, estimada = false): strin
   return `${prefijo}${anios} ${anios === 1 ? 'año' : 'años'}`
 }
 
+// '2024-01-25' → '25 de enero de 2024' (sin desfase por zona horaria).
+export function formatearFecha(fecha: string): string {
+  const [anio, mes, dia] = fecha.slice(0, 10).split('-').map(Number)
+  return new Date(anio, mes - 1, dia).toLocaleDateString('es-BO', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
 // Carga datos al montar y cuando cambian las dependencias.
 export function useCarga<T>(cargar: () => Promise<T>, dependencias: unknown[] = []) {
   const [datos, setDatos] = useState<T | null>(null)
