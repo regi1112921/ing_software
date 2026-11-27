@@ -13,7 +13,7 @@ Hay dos formas de correr el sistema:
 
 ### 1. Requisitos
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y **abierto**.
-- Puertos libres: `8080` (app), `8082` (catálogo público), `3001–3004` (servicios), `5433` (base de datos).
+- Puertos libres: `8080` (app), `8082` (catálogo público), `3001–3005` (servicios), `5433` (base de datos).
 
 ### 2. Levantar
 Desde la raíz del repositorio:
@@ -55,13 +55,14 @@ navegador ──► frontend (nginx :8080) ──► /api/autenticacion → aute
                                      ├─► /api/veterinaria   → veterinaria   :3001
                                      ├─► /api/adopcion      → adopcion      :3002
                                      └─► /api/dashboard     → dashboard     :3003
+                                     └─► /api/voluntariado  → voluntariado  :3005
                                                    todos ──► db (PostgreSQL 17 :5433)
 ```
 
 | Contenedor | Qué hace |
 |------------|----------|
 | `db` | PostgreSQL. La primera vez ejecuta `database/instalar.sql`, los datos de prueba y asigna la contraseña de desarrollo (`database/docker/inicializar.sh`). |
-| `autenticacion`, `veterinaria`, `adopcion`, `dashboard` | Los 4 servicios del backend (una misma imagen, `backend/Dockerfile`). |
+| `autenticacion`, `veterinaria`, `adopcion`, `dashboard`, `voluntariado` | Los 5 servicios del backend (una misma imagen, `backend/Dockerfile`). |
 | `frontend` | Compila React con Vite y lo sirve con nginx (`frontend/Dockerfile`, `frontend/nginx.conf`). |
 | `swagger` | Swagger UI en http://localhost:8081 con la especificación `docs/api/openapi.yaml`. |
 
@@ -99,6 +100,7 @@ vez con [database/supabase/01_storage_fotos.sql](database/supabase/01_storage_fo
 `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API). Sin ellas, se pega la URL de la foto.
 
 ### 2. Backend (4 servicios)
+### 2. Backend (5 servicios)
 
 ```bash
 cd backend
@@ -118,7 +120,7 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Vite redirige `/api/<servicio>` a `localhost:3001–3004`, así que el backend debe estar corriendo.
+Vite redirige `/api/<servicio>` a los puertos `3001–3005`, así que el backend debe estar corriendo.
 
 | Script | Qué hace |
 |--------|----------|

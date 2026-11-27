@@ -5,7 +5,7 @@
 #   BD:    localhost:5433 (usuario, contraseña y base: huellas)
 # Guía completa: GUIA_EJECUCION.md
 
-# Configuración común de los cuatro servicios del backend (misma imagen).
+# Configuración común de los servicios del backend (misma imagen).
 x-servicio-backend: &servicio-backend
   image: huellas-backend
   restart: unless-stopped
@@ -112,6 +112,21 @@ services:
       timeout: 5s
       retries: 10
 
+  voluntariado:
+    <<: *servicio-backend
+    pull_policy: never
+    command: ["node", "services/voluntariado/src/index.js"]
+    environment:
+      <<: *entorno-backend
+      VOLUNTARIADO_PORT: "3005"
+    ports:
+      - "3005:3005"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3005/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   frontend:
     build: ./frontend
     image: huellas-frontend
@@ -123,6 +138,7 @@ services:
       - veterinaria
       - adopcion
       - dashboard
+      - voluntariado
 
   # HU-09: catálogo público de perros en adopción (en producción va en Vercel).
   # Su nginx solo expone /api/adopcion/publico/ del servicio de Adopción.

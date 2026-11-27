@@ -7,8 +7,8 @@
     "services/*"
   ],
   "scripts": {
-    "dev": "concurrently -n auth,vet,adop,dash -c blue,green,magenta,cyan \"npm run dev -w @huellas/autenticacion\" \"npm run dev -w @huellas/veterinaria\" \"npm run dev -w @huellas/adopcion\" \"npm run dev -w @huellas/dashboard\"",
-    "start": "concurrently -n auth,vet,adop,dash \"npm start -w @huellas/autenticacion\" \"npm start -w @huellas/veterinaria\" \"npm start -w @huellas/adopcion\" \"npm start -w @huellas/dashboard\"",
+    "dev": "concurrently -n auth,vet,adop,dash,vol -c blue,green,magenta,cyan,yellow \"npm run dev -w @huellas/autenticacion\" \"npm run dev -w @huellas/veterinaria\" \"npm run dev -w @huellas/adopcion\" \"npm run dev -w @huellas/dashboard\" \"npm run dev -w @huellas/voluntariado\"",
+    "start": "concurrently -n auth,vet,adop,dash,vol \"npm start -w @huellas/autenticacion\" \"npm start -w @huellas/veterinaria\" \"npm start -w @huellas/adopcion\" \"npm start -w @huellas/dashboard\" \"npm start -w @huellas/voluntariado\"",
     "test": "node --test --test-concurrency=1 \"test/*.test.js\""
   },
   "engines": {

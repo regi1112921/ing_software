@@ -7,6 +7,7 @@ import RutaProtegida from '@/shared/components/RutaProtegida'
 import LoginPage from '@/modules/autenticacion/pages/LoginPage'
 import RegistroPage from '@/modules/autenticacion/pages/RegistroPage'
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage'
+import VoluntariadoPage from '@/modules/voluntariado/pages/VoluntariadoPage'
 import PerrosPage from '@/modules/adopcion/pages/PerrosPage'
 import PerroFormPage from '@/modules/adopcion/pages/PerroFormPage'
 import PerroDetallePage from '@/modules/adopcion/pages/PerroDetallePage'
@@ -37,6 +38,9 @@ export default function App() {
               {/* Solo la administración ve el dashboard; el resto empieza en Perros (HU-07). */}
               <Route element={<RutaPorRol permiso="dashboard" redirigirA="/perros" />}>
                 <Route index element={<DashboardPage />} />
+              </Route>
+              <Route element={<RutaPorRol permiso="voluntariado" redirigirA="/perros" />}>
+                <Route path="voluntariado" element={<VoluntariadoPage />} />
               </Route>
 
               <Route path="perros" element={<PerrosPage />} />

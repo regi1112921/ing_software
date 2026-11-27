@@ -28,6 +28,7 @@ export const puertos = {
   adopcion: () => entero('ADOPCION_PORT', 3002),
   dashboard: () => entero('DASHBOARD_PORT', 3003),
   autenticacion: () => entero('AUTENTICACION_PORT', 3004),
+  voluntariado: () => entero('VOLUNTARIADO_PORT', 3005),
 }
 
 export function configBaseDatos() {
