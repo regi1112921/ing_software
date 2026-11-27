@@ -13,6 +13,7 @@ COPY services/autenticacion/package.json services/autenticacion/
 COPY services/veterinaria/package.json services/veterinaria/
 COPY services/adopcion/package.json services/adopcion/
 COPY services/dashboard/package.json services/dashboard/
+COPY services/voluntariado/package.json services/voluntariado/
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY shared shared

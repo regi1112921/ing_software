@@ -1,6 +1,6 @@
 # Backend — Node.js + Express (microservicios)
 
-Cuatro aplicaciones Express independientes que comparten una base PostgreSQL en Supabase.
+Cinco aplicaciones Express independientes que comparten una base PostgreSQL en Supabase.
 La arquitectura y la propiedad de cada tabla están en [../docs/arquitectura.md](../docs/arquitectura.md).
 
 | Servicio | Puerto | Carpeta | Historias (Jira) |
@@ -9,6 +9,7 @@ La arquitectura y la propiedad de cada tabla están en [../docs/arquitectura.md]
 | Veterinaria | 3001 | `services/veterinaria` | HU-08, HU-09, HU-11 |
 | Adopción | 3002 | `services/adopcion` | HU-04 a HU-07, HU-10 a HU-12 |
 | Dashboard | 3003 | `services/dashboard` | HU-13, HU-14 |
+| Voluntariado | 3005 | `services/voluntariado` | HU-16 |
 
 ```
 backend/
@@ -40,7 +41,7 @@ Los usuarios de los datos de prueba no tienen contraseña. Asigna una a quien va
 npm run asignar-contrasena -w @huellas/autenticacion -- maria.alvarado@peluchin.test
 ```
 
-Levanta los cuatro servicios a la vez:
+Levanta los cinco servicios a la vez:
 
 ```bash
 npm run dev
@@ -192,6 +193,17 @@ HU-12: `/resumen` y `/evolucion` aceptan `?desde=&hasta=` (fechas incluidas; por
 | GET | `/perros-en-tratamiento` | HU-14 · RF-04 | Del ingreso más antiguo al más reciente |
 | GET | `/adopciones-por-mes` | HU-13 | `{ meses: [{ mes: 'AAAA-MM', cantidad }] }`: adopciones finalizadas en los últimos 12 meses, incluidos los meses con 0 |
 | GET | `/evolucion?desde=&hasta=` | HU-12 | `{ desde, hasta, unidad: dia\|mes, total_ingresos, total_adopciones, puntos: [{ periodo, ingresos, adopciones }] }`: por día si el rango es menor a 62 días, si no por mes; incluye los de 0 |
+
+### Voluntariado — http://localhost:3005
+Solo el rol `administrador` puede acceder. La interfaz incluye el registro de contactos y disponibilidad, calendario semanal y total de horas por mes.
+
+| Método | Ruta | HU | Descripción |
+|--------|------|----|-------------|
+| GET | `/voluntarios` | HU-16 | Lista voluntarios activos |
+| POST | `/voluntarios` | HU-16 | Registra nombre, teléfono, correo opcional y disponibilidad |
+| GET | `/turnos?desde=&hasta=` | HU-16 | Turnos de un rango de hasta siete días |
+| POST | `/turnos` | HU-16 | Asigna un turno; rechaza horarios superpuestos |
+| GET | `/horas?mes=AAAA-MM` | HU-16 | Horas asignadas por persona en el mes |
 
 Todos los servicios exponen `GET /health`.
 
