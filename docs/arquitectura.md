@@ -5,6 +5,7 @@
 ```
 ┌──────────────────────────────── FRONTEND (React) ─────────────────────────────────┐
 │  Inicio de sesión     Perros / Adopciones      Historial médico       Dashboard   │
+│  Voluntariado                                                                    │
 └──────┬──────────────────────────┬──────────────────────┬───────────────────┬──────┘
        │ /api/autenticacion       │ /api/adopcion        │ /api/veterinaria  │ /api/dashboard
 ┌──────▼─────────────┐ ┌──────────▼─────────┐ ┌──────────▼─────────┐ ┌───────▼────────────┐
@@ -17,7 +18,8 @@
 ┌──────▼──────────────────────────▼──────────────────────▼───────────────────▼──────┐
 │                    BASE DE DATOS (PostgreSQL en Supabase, esquema public)          │
 │  usuarios · perros · razas · tamanos · estados_perro · adoptantes ·                │
-│  solicitudes_adopcion · estados_solicitud · consultas · vacunas · v_perros          │
+│  solicitudes_adopcion · estados_solicitud · consultas · vacunas · v_perros ·        │
+│  voluntarios · turnos_voluntariado                                                  │
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -33,6 +35,7 @@ base de datos, pero **cada tabla tiene un único servicio dueño**, que es el ú
 | `adoptantes`, `solicitudes_adopcion`, `estados_solicitud` | Adopción | — |
 | `consultas` | Veterinaria | — |
 | `vacunas` | Veterinaria | — (sin endpoints: no hay RF de vacunas) |
+| `voluntarios`, `turnos_voluntariado` | Voluntariado | — |
 | `v_perros` (vista) | — | Adopción, Dashboard |
 
 El estado del perro pasa a *En proceso de adopción*, *Adoptado* o vuelve a *Disponible* mediante triggers de
@@ -45,7 +48,8 @@ la BD cuando Adopción cambia una adopción (RF-18, RF-19, RF-20), dentro de la 
 | Autenticación | HU-02, HU-03 | Inicio y cierre de sesión. Emite tokens y los valida para los demás servicios. |
 | Adopción | HU-04 a HU-07, HU-10 a HU-12 | Registro, edición, listado y ficha de perros; catálogos; registro, consulta y estados de las adopciones. |
 | Veterinaria | HU-08, HU-09 | Historial médico y registro de atenciones. |
-| Dashboard | HU-13, HU-14 | Indicadores por estado y perros en tratamiento. No escribe datos. |
+| Dashboard | HU-13, HU-14, HU-15 | Indicadores, perros en tratamiento y reportes exportables. |
+| Voluntariado | HU-16 | Registro de voluntarios, turnos semanales y horas mensuales. |
 
 ## Sesión
 

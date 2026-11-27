@@ -53,6 +53,9 @@ rechaza, vuelve a *Disponible*.
 | Adopción | datos del adoptante **[M]** | `adoptantes.nombre_completo`, `telefono`, `direccion` |
 | Adopción | perro, fecha, estado, observaciones **[M]** | `solicitudes_adopcion.perro_id`, `fecha_solicitud`, `estado`, `observaciones` |
 | Adopción | fechas de cada etapa **[P]** | `solicitudes_adopcion.fecha_aprobacion`, `fecha_rechazo`, `fecha_adopcion` |
+| Registro de voluntarios | contacto y disponibilidad **[HU-16]** | `voluntarios.nombre_completo`, `telefono`, `correo`, `disponibilidad` |
+| Turnos de apoyo | persona, fecha, horario y actividad **[HU-16]** | `turnos_voluntariado.voluntario_id`, `fecha`, `hora_inicio`, `hora_fin`, `actividad` |
+| Horas por mes | total por voluntario **[HU-16]** | suma de duración en `turnos_voluntariado` dentro del mes |
 | Dashboard | conteos por estado **[M]** | se calculan con `count(*)` sobre `perros.estado` |
 | Trazabilidad | quién registró cada dato **[P]** | `registrado_por` en perros, adoptantes y solicitudes; `veterinario_id` en consultas y vacunas |
 
@@ -138,6 +141,7 @@ erDiagram
     PERROS   ||--o{ CONSULTAS            : "tiene"
     PERROS   ||--o{ VACUNAS              : "recibe"
     CONSULTAS |o--o{ VACUNAS             : "se aplica en"
+    VOLUNTARIOS ||--o{ TURNOS_VOLUNTARIADO : "cumple"
 
     RAZAS {
         bigint id PK
@@ -223,6 +227,22 @@ erDiagram
         date fecha_proxima_dosis "nullable"
         text observaciones "nullable"
     }
+    VOLUNTARIOS {
+        bigint id PK
+        text nombre_completo
+        text telefono
+        text correo "nullable"
+        text disponibilidad
+        boolean activo
+    }
+    TURNOS_VOLUNTARIADO {
+        bigint id PK
+        bigint voluntario_id FK
+        date fecha
+        time hora_inicio
+        time hora_fin
+        text actividad
+    }
 ```
 
 Cardinalidades clave:
@@ -230,6 +250,7 @@ Cardinalidades clave:
 - Un perro tiene 0..N solicitudes, pero como máximo **1 activa** y **1 finalizada** (índices únicos parciales).
 - Un adoptante tiene 0..N solicitudes.
 - Un perro tiene 0..N consultas y 0..N vacunas. Una vacuna pertenece como máximo a 1 consulta, **del mismo perro**.
+- Un voluntario puede tener 0..N turnos; sus horas se suman por mes desde la duración de esos turnos.
 - Las tablas principales tienen además `creado_en` y `actualizado_en` (`timestamptz`). No se muestran en el diagrama.
 - Los catálogos (razas, tamaños, estados) se relacionan 1..N con perros y solicitudes.
 
@@ -367,6 +388,31 @@ Los códigos solo admiten minúsculas y `_`. Un valor en uso no se puede borrar 
 | creado_en / actualizado_en | timestamptz | Sí | |
 
 Índices: `ix_vacunas_perro_fecha`, `ix_vacunas_proxima_dosis` (parcial), `ix_vacunas_consulta` (parcial), `ix_vacunas_veterinario`.
+
+### voluntarios
+
+| Campo | Tipo | Oblig. | Restricciones |
+|-------|------|:------:|---------------|
+| id | bigint | Sí | PK |
+| nombre_completo | text | Sí | no vacío |
+| telefono | text | Sí | 7 a 15 dígitos, `+` inicial opcional |
+| correo | text | No | correo válido en minúsculas |
+| disponibilidad | text | Sí | no vacío; texto de disponibilidad semanal |
+| activo | boolean | Sí | `true` por defecto |
+| creado_en / actualizado_en | timestamptz | Sí | `actualizado_en` lo mantiene un trigger |
+
+### turnos_voluntariado
+
+| Campo | Tipo | Oblig. | Restricciones |
+|-------|------|:------:|---------------|
+| id | bigint | Sí | PK |
+| voluntario_id | bigint | Sí | FK → voluntarios |
+| fecha | date | Sí | |
+| hora_inicio / hora_fin | time | Sí | fin posterior al inicio; máximo 12 horas |
+| actividad | text | Sí | no vacía |
+| creado_en | timestamptz | Sí | `now()` |
+
+El servicio evita asignar horarios superpuestos al mismo voluntario. Las horas mensuales se calculan sumando la duración de sus turnos.
 
 ### Datos calculados (no se guardan)
 

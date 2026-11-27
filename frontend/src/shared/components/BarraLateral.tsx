@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { ClipboardList, Globe, Heart, LayoutDashboard, LoaderCircle, LogOut, PawPrint, Syringe, X } from 'lucide-react'
+import { ClipboardList, Globe, Heart, LayoutDashboard, LoaderCircle, LogOut, PawPrint, Syringe, UsersRound, X } from 'lucide-react'
 import { useSesion } from '@/shared/sesion/SesionContext'
 import { tienePermiso, type Permiso } from '@/shared/sesion/permisos'
 import { NOMBRE_ROL, iniciales } from '@/shared/utils/formato'
@@ -9,6 +9,7 @@ import Logo from './Logo'
 // permiso: si se indica, el enlace solo se muestra a los roles que lo tienen (HU-07).
 const ENLACES: { a: string; etiqueta: string; icono: typeof PawPrint; exacto: boolean; permiso?: Permiso }[] = [
   { a: '/', etiqueta: 'Dashboard', icono: LayoutDashboard, exacto: true, permiso: 'dashboard' },
+  { a: '/voluntariado', etiqueta: 'Voluntariado', icono: UsersRound, exacto: false, permiso: 'voluntariado' },
   { a: '/perros', etiqueta: 'Perros', icono: PawPrint, exacto: false },
   { a: '/adopciones', etiqueta: 'Adopciones', icono: Heart, exacto: false, permiso: 'adopciones' },
   { a: '/solicitudes-web', etiqueta: 'Solicitudes web', icono: Globe, exacto: false, permiso: 'adopciones' },

@@ -3,7 +3,7 @@ info:
   title: HUELLAS · API del albergue
   version: 1.0.0
   description: |
-    API REST de los cuatro microservicios de HUELLAS. Cada servicio corre en su propio puerto,
+    API REST de los cinco microservicios de HUELLAS. Cada servicio corre en su propio puerto,
     por eso cada ruta declara su `servers` (con Docker Compose o `npm run dev` en `backend/`).
 
     **Sesión:** todas las rutas, salvo `POST /auth/login`, `POST /auth/registro`, `GET /health` y las del
@@ -26,6 +26,8 @@ servers:
     description: Veterinaria
   - url: http://localhost:3003
     description: Dashboard
+  - url: http://localhost:3005
+    description: Voluntariado
 
 tags:
   - name: Autenticación
@@ -43,7 +45,9 @@ tags:
   - name: Veterinaria
     description: "Puerto 3001 · HU-08, HU-09"
   - name: Dashboard
-    description: "Puerto 3003 · HU-13, HU-14. Solo rol administrador."
+    description: "Puerto 3003 · HU-13 a HU-15. Solo rol administrador."
+  - name: Voluntariado
+    description: "Puerto 3005 · HU-16. Solo rol administrador."
   - name: Salud
     description: Todos los servicios exponen `GET /health`.
 
@@ -1001,12 +1005,159 @@ paths:
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
 
+  # ───────────────────────── Voluntariado ─────────────────────────
+  /voluntarios:
+    servers: &srvVol
+      - url: http://localhost:3005
+        description: Voluntariado
+    get:
+      tags: [Voluntariado]
+      summary: Listar voluntarios activos
+      operationId: listarVoluntarios
+      responses:
+        '200':
+          description: Voluntarios registrados
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, voluntarios]
+                properties:
+                  total: { type: integer }
+                  voluntarios:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: integer }
+                        nombre_completo: { type: string }
+                        telefono: { type: string }
+                        correo: { type: [string, 'null'] }
+                        disponibilidad: { type: string }
+                        activo: { type: boolean }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+    post:
+      tags: [Voluntariado]
+      summary: Registrar un voluntario
+      operationId: registrarVoluntario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre_completo, telefono, disponibilidad]
+              properties:
+                nombre_completo: { type: string, maxLength: 150 }
+                telefono: { type: string, example: '+59171234567' }
+                correo: { type: [string, 'null'], format: email }
+                disponibilidad: { type: string, maxLength: 500, example: 'Lunes y miércoles por la mañana' }
+      responses:
+        '201':
+          description: Voluntario registrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
+                  nombre_completo: { type: string }
+                  telefono: { type: string }
+                  correo: { type: [string, 'null'] }
+                  disponibilidad: { type: string }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
+  /turnos:
+    servers: *srvVol
+    get:
+      tags: [Voluntariado]
+      summary: Consultar los turnos de hasta siete días
+      operationId: calendarioVoluntariado
+      parameters:
+        - name: desde
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: hasta
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Turnos del periodo
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [desde, hasta, total, turnos]
+                properties:
+                  desde: { type: string, format: date }
+                  hasta: { type: string, format: date }
+                  total: { type: integer }
+                  turnos: { type: array, items: { type: object } }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+    post:
+      tags: [Voluntariado]
+      summary: Asignar un turno a un voluntario
+      operationId: asignarTurno
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [voluntario_id, fecha, hora_inicio, hora_fin, actividad]
+              properties:
+                voluntario_id: { type: integer }
+                fecha: { type: string, format: date }
+                hora_inicio: { type: string, pattern: '^\d{2}:\d{2}$' }
+                hora_fin: { type: string, pattern: '^\d{2}:\d{2}$' }
+                actividad: { type: string, maxLength: 300 }
+      responses:
+        '201': { description: Turno asignado }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /horas:
+    servers: *srvVol
+    get:
+      tags: [Voluntariado]
+      summary: Obtener horas asignadas por voluntario en un mes
+      operationId: horasMensualesVoluntariado
+      parameters:
+        - name: mes
+          in: query
+          required: true
+          schema: { type: string, pattern: '^\d{4}-(0[1-9]|1[0-2])$', example: '2026-11' }
+      responses:
+        '200':
+          description: Total de horas por persona
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mes, total, voluntarios]
+                properties:
+                  mes: { type: string }
+                  total: { type: integer }
+                  voluntarios: { type: array, items: { type: object } }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+
   # ───────────────────────── Salud ─────────────────────────
   /health:
     get:
       tags: [Salud]
       summary: Estado del servicio
-      description: Disponible en los cuatro puertos; sirve para los healthchecks de Docker.
+      description: Disponible en los cinco puertos; sirve para los healthchecks de Docker.
       operationId: salud
       security: []
       responses:
@@ -1018,7 +1169,7 @@ paths:
                 type: object
                 required: [servicio, estado]
                 properties:
-                  servicio: { type: string, enum: [autenticacion, veterinaria, adopcion, dashboard] }
+                  servicio: { type: string, enum: [autenticacion, veterinaria, adopcion, dashboard, voluntariado] }
                   estado: { type: string, const: ok }
 
 components:

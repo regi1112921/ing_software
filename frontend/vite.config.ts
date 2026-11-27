@@ -33,6 +33,7 @@ export default defineConfig(({ mode }) => {
         '/api/veterinaria': proxy(`${host}:3001`, '/api/veterinaria'),
         '/api/adopcion': proxy(`${host}:3002`, '/api/adopcion'),
         '/api/dashboard': proxy(`${host}:3003`, '/api/dashboard'),
+        '/api/voluntariado': proxy(`${host}:3005`, '/api/voluntariado'),
       },
     },
   }
