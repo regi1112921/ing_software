@@ -205,6 +205,17 @@ Solo el rol `administrador` puede acceder. La interfaz incluye el registro de co
 | POST | `/turnos` | HU-16 | Asigna un turno; rechaza horarios superpuestos |
 | GET | `/horas?mes=AAAA-MM` | HU-16 | Horas asignadas por persona en el mes |
 
+### Voluntariado — http://localhost:3005
+Solo el rol `administrador` puede acceder. La interfaz incluye el registro de contactos y disponibilidad, calendario semanal y total de horas por mes.
+
+| Método | Ruta | HU | Descripción |
+|--------|------|----|-------------|
+| GET | `/voluntarios` | HU-16 | Lista voluntarios activos |
+| POST | `/voluntarios` | HU-16 | Registra nombre, teléfono, correo opcional y disponibilidad |
+| GET | `/turnos?desde=&hasta=` | HU-16 | Turnos de un rango de hasta siete días |
+| POST | `/turnos` | HU-16 | Asigna un turno; rechaza horarios superpuestos |
+| GET | `/horas?mes=AAAA-MM` | HU-16 | Horas asignadas por persona en el mes |
+
 Todos los servicios exponen `GET /health`.
 
 ## Fuera de alcance (sin RF en el SRS)
