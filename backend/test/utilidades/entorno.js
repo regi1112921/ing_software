@@ -19,6 +19,7 @@ const ARCHIVOS_BD = [
   'schema/02_usuarios.sql',
   'schema/03_adopcion.sql',
   'schema/04_veterinaria.sql',
+  'schema/05_donaciones.sql',
   'views/01_vistas.sql',
   'seguridad/01_permisos.sql',
   'seeds/01_datos_prueba.sql',

@@ -1,4 +1,4 @@
-import { crearApp, exigirRol } from '@huellas/shared'
+import { crearApp, exigirRol, ROLES } from '@huellas/shared'
 import { ROLES_ADOPCIONES } from './permisos.js'
 import { crearCatalogosRepository } from './repositories/catalogos.repository.js'
 import { crearPerrosRepository } from './repositories/perros.repository.js'
@@ -23,6 +23,10 @@ import { crearAdopcionesRoutes } from './routes/adopciones.routes.js'
 import { crearPublicoRoutes } from './routes/publico.routes.js'
 import { crearSolicitudesPublicasRoutes } from './routes/solicitudesPublicas.routes.js'
 import { crearSeguimientosDeAdopcionRoutes, crearSeguimientosRoutes } from './routes/seguimientos.routes.js'
+import { crearDonacionesRepository } from './repositories/donaciones.repository.js'
+import { crearDonacionesService } from './services/donaciones.service.js'
+import { crearDonacionesController } from './controllers/donaciones.controller.js'
+import { crearDonacionesRoutes } from './routes/donaciones.routes.js'
 
 // limitePublico: opcional, para cambiar el límite de solicitudes del catálogo (pruebas).
 export function crearAppAdopcion({ pool, verificarSesion, limitePublico }) {
@@ -32,6 +36,7 @@ export function crearAppAdopcion({ pool, verificarSesion, limitePublico }) {
   const adopciones = crearAdopcionesRepository(pool)
   const solicitudesPublicas = crearSolicitudesPublicasRepository(pool)
   const seguimientos = crearSeguimientosRepository(pool)
+  const donacionesService = crearDonacionesService({ donaciones: crearDonacionesRepository(pool) })
 
   const perrosService = crearPerrosService({ perros, adopciones, catalogos })
   const adopcionesService = crearAdopcionesService({ pool, adopciones, adoptantes, perros, solicitudesPublicas })
@@ -49,6 +54,8 @@ export function crearAppAdopcion({ pool, verificarSesion, limitePublico }) {
         crearPublicoRoutes(crearPublicoController(publicoService), limitePublico ? { limite: limitePublico } : undefined),
       )
       app.use('/catalogos', exigirSesion, crearCatalogosRoutes(crearCatalogosController(catalogos)))
+      // HU-18: registro de donaciones, exclusivo de administración. No modifica inventario.
+      app.use('/donaciones', exigirSesion, exigirRol(ROLES.administrador), crearDonacionesRoutes(crearDonacionesController(donacionesService)))
       app.use('/perros', exigirSesion, crearPerrosRoutes(crearPerrosController(perrosService)))
       // HU-10: seguimientos después de la adopción (antes que /adopciones/:id para no chocar).
       app.use(

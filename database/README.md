@@ -21,6 +21,7 @@ reset_desarrollo.sql  ⚠ Borra todas las tablas y datos
 | `schema/02_usuarios.sql` | Todos (autenticación) | `usuarios` |
 | `schema/03_adopcion.sql` | Servicio de Adopción | `perros`, `adoptantes`, `solicitudes_adopcion` + reglas de estado, `solicitudes_publicas`, `seguimientos_adopcion` (HU-10) |
 | `schema/04_veterinaria.sql` | Servicio de Veterinaria | `consultas`, `vacunas`, `desparasitaciones`, `citas` (HU-11 · agenda) |
+| `schema/05_donaciones.sql` | Servicio de Adopción | `donaciones` (HU-18 · registro de donaciones recibidas) |
 | `views/01_vistas.sql` | Todos (lectura) | `fn_edad_en_meses`, vista `v_perros` (con raza, tamaño y estado legibles), vista `v_controles_pendientes` (HU-08), vista `v_seguimiento_adopciones` (HU-10) |
 | `seguridad/01_permisos.sql` | — | RLS y revocación de `anon` / `authenticated` |
 | `seeds/01_datos_prueba.sql` | — | 4 usuarios, 8 perros, 3 adoptantes, 3 solicitudes, 5 consultas, 6 vacunas, 4 desparasitaciones, 3 seguimientos, 5 citas |
@@ -43,10 +44,11 @@ los asigna la base automáticamente según la solicitud de adopción.
 3. `schema/02_usuarios.sql`
 4. `schema/03_adopcion.sql`
 5. `schema/04_veterinaria.sql`
-6. `views/01_vistas.sql`
-7. `seguridad/01_permisos.sql`
-8. `seeds/01_datos_prueba.sql` *(opcional, solo en una base vacía)*
-9. `tests/01_verificaciones.sql` *(opcional; termina en ROLLBACK, no deja datos)*
+6. `schema/05_donaciones.sql`
+7. `views/01_vistas.sql`
+8. `seguridad/01_permisos.sql`
+9. `seeds/01_datos_prueba.sql` *(opcional, solo en una base vacía)*
+10. `tests/01_verificaciones.sql` *(opcional; termina en ROLLBACK, no deja datos)*
 
 > La base de Supabase es **compartida por todo el equipo**. La estructura se crea **una sola vez**.
 > Avisen en el grupo antes de crearla, cargar datos o resetearla.

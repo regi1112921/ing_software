@@ -5,6 +5,8 @@ import { useSesion } from './SesionContext'
 // reglas (403); aquí solo se ocultan menús, pestañas y botones que no corresponden.
 export const PERMISOS = {
   dashboard: ['administrador'],
+  // HU-18: registro y consulta de donaciones recibidas.
+  donaciones: ['administrador'],
   adopciones: ['administrador', 'responsable_adopciones'],
   registrarAtencion: ['administrador', 'veterinario'],
   // HU-08: lista de controles pendientes y registro de vacunas y desparasitaciones.

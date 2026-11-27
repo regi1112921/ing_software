@@ -84,6 +84,8 @@ describe('Servicio de Dashboard · filtro de fechas (HU-12)', () => {
         adopciones: 0,
         solicitudes: 1,
         atenciones: 1,
+        donaciones: 0,
+        dinero_donado_bs: 0,
       })
 
       const trimestre = (await resumen('?desde=2021-03-01&hasta=2021-05-31')).periodo

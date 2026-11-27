@@ -64,7 +64,13 @@ export function crearIndicadoresService({ indicadores }) {
           adopciones_mes: solicitudes.adopciones_mes,
           solicitudes_pendientes: solicitudes.pendientes,
         },
-        periodo: { desde, hasta, ...periodo },
+        periodo: {
+          desde,
+          hasta,
+          ...periodo,
+          donaciones: Number(periodo.donaciones),
+          dinero_donado_bs: Number(periodo.dinero_donado_bs ?? 0),
+        },
       }
     },
 

@@ -57,7 +57,9 @@ export function crearIndicadoresRepository(pool) {
                 (select count(*) from solicitudes_adopcion
                   where estado = 'finalizada' and fecha_adopcion between $1 and $2) as adopciones,
                 (select count(*) from solicitudes_adopcion where fecha_solicitud between $1 and $2) as solicitudes,
-                (select count(*) from consultas where fecha between $1 and $2) as atenciones`,
+                (select count(*) from consultas where fecha between $1 and $2) as atenciones,
+                (select count(*) from donaciones where fecha between $1 and $2) as donaciones,
+                (select coalesce(sum(monto_bs), 0) from donaciones where fecha between $1 and $2) as dinero_donado_bs`,
         [desde, hasta],
       )
       return rows[0]

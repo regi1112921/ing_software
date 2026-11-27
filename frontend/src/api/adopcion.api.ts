@@ -1,6 +1,8 @@
 import { http, query } from './http'
 import type {
   Adopcion,
+  DatosDonacion,
+  Donacion,
   AdopcionSinSeguimiento,
   DatosSeguimiento,
   Seguimiento,
@@ -34,6 +36,10 @@ export const adopcionApi = {
   listarAdopciones: () => http<{ total: number; adopciones: Adopcion[] }>(`${BASE}/adopciones`),
   obtenerAdopcion: (id: number | string) => http<Adopcion>(`${BASE}/adopciones/${id}`),
   crearAdopcion: (datos: DatosAdopcion) => http<Adopcion>(`${BASE}/adopciones`, { method: 'POST', body: datos }),
+
+  // HU-18 · Registro de donaciones recibidas (solo administración).
+  listarDonaciones: () => http<{ total: number; donaciones: Donacion[] }>(`${BASE}/donaciones`),
+  crearDonacion: (datos: DatosDonacion) => http<Donacion>(`${BASE}/donaciones`, { method: 'POST', body: datos }),
   cambiarEstadoAdopcion: (id: number | string, cambio: CambioEstadoAdopcion) =>
     http<Adopcion>(`${BASE}/adopciones/${id}/estado`, { method: 'PATCH', body: cambio }),
 

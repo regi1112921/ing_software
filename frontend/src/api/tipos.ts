@@ -6,6 +6,33 @@ export type EstadoPerro = 'disponible' | 'en_tratamiento' | 'en_adopcion' | 'ado
 export type EstadoAdopcion = 'en_proceso' | 'aprobada' | 'rechazada' | 'finalizada'
 export type Rol = 'administrador' | 'veterinario' | 'responsable_adopciones'
 
+// HU-18 · Donaciones recibidas.
+export type TipoDonacion = 'dinero' | 'alimento' | 'insumos' | 'otro'
+
+export interface Donacion {
+  id: number
+  fecha: string
+  donante: string
+  contacto: string | null
+  tipo: TipoDonacion
+  monto_bs: number | null
+  cantidad: number | null
+  descripcion: string | null
+  registrado_por: number
+  registrado_por_nombre: string
+  creado_en: string
+}
+
+export interface DatosDonacion {
+  fecha: string
+  donante: string
+  contacto?: string | null
+  tipo: TipoDonacion
+  monto_bs?: number
+  cantidad?: number
+  descripcion?: string | null
+}
+
 // ── Autenticación ────────────────────────────────────────────────────────────
 
 export interface Usuario {
@@ -375,7 +402,14 @@ export interface Resumen {
     solicitudes_pendientes: number
   }
   // HU-12 · Indicadores del rango elegido.
-  periodo: Periodo & { ingresos: number; adopciones: number; solicitudes: number; atenciones: number }
+  periodo: Periodo & {
+    ingresos: number
+    adopciones: number
+    solicitudes: number
+    atenciones: number
+    donaciones: number
+    dinero_donado_bs: number
+  }
 }
 
 // HU-12 · Ingresos y adopciones del periodo, por día ('AAAA-MM-DD') o por mes ('AAAA-MM').

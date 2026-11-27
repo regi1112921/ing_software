@@ -7,6 +7,7 @@ import RutaProtegida from '@/shared/components/RutaProtegida'
 import LoginPage from '@/modules/autenticacion/pages/LoginPage'
 import RegistroPage from '@/modules/autenticacion/pages/RegistroPage'
 import DashboardPage from '@/modules/dashboard/pages/DashboardPage'
+import DonacionesPage from '@/modules/adopcion/pages/DonacionesPage'
 import PerrosPage from '@/modules/adopcion/pages/PerrosPage'
 import PerroFormPage from '@/modules/adopcion/pages/PerroFormPage'
 import PerroDetallePage from '@/modules/adopcion/pages/PerroDetallePage'
@@ -36,6 +37,11 @@ export default function App() {
               {/* Solo la administración ve el dashboard; el resto empieza en Perros (HU-07). */}
               <Route element={<RutaPorRol permiso="dashboard" redirigirA="/perros" />}>
                 <Route index element={<DashboardPage />} />
+              </Route>
+
+              {/* HU-18: administración registra donaciones ya recibidas. */}
+              <Route element={<RutaPorRol permiso="donaciones" redirigirA="/perros" />}>
+                <Route path="donaciones" element={<DonacionesPage />} />
               </Route>
 
               <Route path="perros" element={<PerrosPage />} />
