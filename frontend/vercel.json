@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/autenticacion/:path*", "destination": "https://huellas-autenticacion.onrender.com/:path*" },
+    { "source": "/api/veterinaria/:path*", "destination": "https://huellas-veterinaria.onrender.com/:path*" },
+    { "source": "/api/adopcion/:path*", "destination": "https://huellas-adopcion.onrender.com/:path*" },
+    { "source": "/api/dashboard/:path*", "destination": "https://huellas-dashboard.onrender.com/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
