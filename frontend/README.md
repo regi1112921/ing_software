@@ -135,7 +135,7 @@ abierta, la app vuelve al inicio de sesión con el aviso "Tu sesión expiró".
 | `/solicitudes-web` | Solicitudes del catálogo público: contactar, **Iniciar adopción** (abre el registro prellenado y la marca como convertida) o **Descartar** (administración y responsables de adopciones) | HU-09 |
 | `/adopciones` | Listado de adopciones con filtro por estado (administración y responsables de adopciones; también `/adopciones/*`) | HU-11 |
 | `/adopciones/nueva` | Registrar adopción (`?perro=<id>` lo preselecciona) | HU-10 |
-| `/adopciones/:id` | Detalle y cambio de estado; en las finalizadas, sección **Seguimientos** (registrar visita o llamada, marcar con problemas o como revisado) | HU-11, HU-12, HU-10 · seguimiento |
+| `/adopciones/:id` | Detalle y cambio de estado (al rechazar, motivo obligatorio); en las aprobadas o rechazadas, sección **Aviso al adoptante** (mensaje sugerido editable, botón **Enviar por WhatsApp** que registra el aviso y abre wa.me, e historial de avisos); en las finalizadas, sección **Seguimientos** (registrar visita o llamada, marcar con problemas o como revisado) | HU-11, HU-12, HU-13, HU-10 · seguimiento |
 | `/seguimientos` | Seguimientos con problemas por revisar y adopciones sin seguimiento en los últimos 30 días (administración y responsables de adopciones) | HU-10 · seguimiento |
 | Menú lateral | Usuario conectado y "Cerrar sesión" | HU-03 |
 

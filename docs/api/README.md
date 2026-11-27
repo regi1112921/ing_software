@@ -42,7 +42,7 @@ Se puede correr varias veces sobre la misma base: crea un perro y una cuenta nue
 | 1 · Autenticación | HU-02 iniciar sesión, registro de cuenta |
 | 2 · Perros | HU-04 registrar, HU-05 editar, HU-06 listar/buscar/filtrar, HU-07 ficha |
 | 3 · Veterinaria | HU-08 historial, HU-09 registrar atención |
-| 4 · Adopciones | HU-10 registrar, HU-11 consultar, HU-12 aprobar y finalizar (con los 409 de las reglas de negocio) |
+| 4 · Adopciones | HU-10 registrar, HU-11 consultar, HU-12 aprobar y finalizar (con los 409 de las reglas de negocio), HU-13 aviso al adoptante (motivo obligatorio al rechazar, mensaje sugerido, registro y 409 en finalizada) |
 | 5 · Dashboard | HU-13 indicadores, HU-14 perros en tratamiento, 403 para roles que no son administrador |
 | 6 · Cerrar sesión | HU-03 cerrar sesión y token invalidado |
 

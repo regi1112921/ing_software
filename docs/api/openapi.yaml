@@ -40,6 +40,8 @@ tags:
     description: "Servicio de Adopción, puerto 3002 · HU-09. Bandeja privada de las solicitudes del catálogo (administrador y responsable_adopciones)."
   - name: Seguimientos
     description: "Servicio de Adopción, puerto 3002 · HU-10 (seguimiento después de la adopción). Administrador y responsable_adopciones."
+  - name: Avisos
+    description: "Servicio de Adopción, puerto 3002 · HU-13 (aviso al adoptante por WhatsApp al aprobar o rechazar su solicitud). Administrador y responsable_adopciones."
   - name: Veterinaria
     description: "Puerto 3001 · HU-08, HU-09, HU-11 (agenda de citas)"
   - name: Dashboard
@@ -369,6 +371,10 @@ paths:
       description: |
         HU-12 · RF-17, RF-18, RF-19, RF-20. Transiciones: `en_proceso → aprobada | rechazada`,
         `aprobada → finalizada | rechazada`. Al finalizar, el perro pasa a `adoptado`; al rechazar, vuelve a `disponible`.
+
+        HU-13: al rechazar, `motivo_rechazo` es obligatorio (se le comunica al adoptante; en otros estados se ignora).
+        Al aprobar o rechazar, la respuesta trae `aviso` con el mensaje para el adoptante y el enlace de WhatsApp
+        (no se registra hasta `POST /adopciones/{id}/avisos`). Al finalizar, `aviso` es `null`.
       operationId: cambiarEstadoAdopcion
       requestBody:
         required: true
@@ -380,14 +386,110 @@ paths:
               properties:
                 estado: { type: string, enum: [aprobada, rechazada, finalizada] }
                 fecha: { type: string, format: date, description: Hoy si no se indica. }
-                observaciones: { type: [string, 'null'], maxLength: 2000 }
-            example: { estado: aprobada }
+                observaciones: { type: [string, 'null'], maxLength: 2000, description: Notas internas; no van en el aviso. }
+                motivo_rechazo:
+                  type: [string, 'null']
+                  maxLength: 500
+                  description: HU-13. Obligatorio si `estado` es `rechazada`; va en el aviso al adoptante.
+            examples:
+              aprobar: { value: { estado: aprobada } }
+              rechazar: { value: { estado: rechazada, motivo_rechazo: La vivienda no tiene espacio adecuado para un perro grande. } }
       responses:
         '200':
           description: Estado actualizado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/AdopcionDetalle' }
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AdopcionDetalle'
+                  - type: object
+                    properties:
+                      aviso:
+                        description: HU-13. Mensaje listo para el adoptante (null al finalizar).
+                        oneOf:
+                          - $ref: '#/components/schemas/AvisoBorrador'
+                          - type: 'null'
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  # ───────────────────────── Adopción · avisos al adoptante (HU-13) ─────────────────────────
+  /adopciones/{id}/avisos:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Avisos]
+      summary: Avisos enviados al adoptante
+      description: HU-13. Registro de avisos de la adopción (quién, cuándo y el texto), del más reciente al más antiguo.
+      operationId: listarAvisos
+      responses:
+        '200':
+          description: Avisos
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [total, avisos]
+                properties:
+                  total: { type: integer, example: 1 }
+                  avisos:
+                    type: array
+                    items: { $ref: '#/components/schemas/Aviso' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+    post:
+      tags: [Avisos]
+      summary: Registrar el envío de un aviso
+      description: |
+        HU-13. Registra quién envía el aviso, cuándo, a qué teléfono y el texto, y devuelve `enlace_whatsapp`
+        (`https://wa.me/<telefono>?text=...`) para abrirlo con el mensaje ya escrito. El tipo sale del estado:
+        `aprobacion` si está aprobada, `rechazo` si está rechazada; en proceso o finalizada → 409.
+        Sin `mensaje` se envía el sugerido; con `mensaje`, el texto ajustado por el responsable.
+      operationId: registrarAviso
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mensaje: { type: [string, 'null'], maxLength: 2000 }
+            example: {}
+      responses:
+        '201':
+          description: Aviso registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Aviso' }
+        '400': { $ref: '#/components/responses/Validacion' }
+        '401': { $ref: '#/components/responses/NoAutenticado' }
+        '403': { $ref: '#/components/responses/Prohibido' }
+        '404': { $ref: '#/components/responses/NoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflicto' }
+
+  /adopciones/{id}/avisos/borrador:
+    servers: *srvAdopcion
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Avisos]
+      summary: Mensaje sugerido para el adoptante
+      description: |
+        HU-13. Mensaje según el estado actual, sin registrarlo: el de aprobación con los siguientes pasos y el de
+        rechazo con el motivo. El teléfono va en formato internacional sin `+` (se antepone 591 si no tiene código
+        de país). En proceso o finalizada → 409.
+      operationId: borradorAviso
+      responses:
+        '200':
+          description: Mensaje sugerido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AvisoBorrador' }
         '400': { $ref: '#/components/responses/Validacion' }
         '401': { $ref: '#/components/responses/NoAutenticado' }
         '403': { $ref: '#/components/responses/Prohibido' }
@@ -1478,6 +1580,7 @@ components:
         fecha_rechazo: { type: [string, 'null'], format: date }
         fecha_adopcion: { type: [string, 'null'], format: date }
         observaciones: { type: [string, 'null'] }
+        motivo_rechazo: { type: [string, 'null'], description: HU-13. Solo en rechazadas; se le comunica al adoptante. }
         creado_en: { type: string, format: date-time }
         actualizado_en: { type: string, format: date-time }
         perro:
@@ -1597,6 +1700,30 @@ components:
         registrado_por_nombre: { type: string, example: María Alvarado }
         creado_en: { type: string, format: date-time }
         actualizado_en: { type: string, format: date-time }
+
+    AvisoBorrador:
+      type: object
+      required: [tipo, telefono, mensaje, enlace_whatsapp]
+      properties:
+        tipo: { type: string, enum: [aprobacion, rechazo] }
+        telefono: { type: string, pattern: '^[0-9]{8,15}$', example: '59168812345', description: Internacional sin +. }
+        mensaje:
+          type: string
+          example: "Hola, Jorge Pérez Ruiz. Le escribimos del albergue Huellas sobre su solicitud para adoptar a Luna.\n\nLamentamos informarle que esta vez no pudimos aprobarla.\nMotivo: La vivienda no tiene espacio adecuado para un perro de su tamaño.\n\nGracias por querer darle un hogar a uno de nuestros perros; puede volver a postular cuando quiera."
+        enlace_whatsapp: { type: string, format: uri, example: 'https://wa.me/59168812345?text=Hola%2C%20Jorge...' }
+
+    Aviso:
+      allOf:
+        - $ref: '#/components/schemas/AvisoBorrador'
+        - type: object
+          required: [id, solicitud_id, canal, enviado_por, enviado_por_nombre, enviado_en]
+          properties:
+            id: { type: integer }
+            solicitud_id: { type: integer, description: id de la adopción. }
+            canal: { type: string, enum: [whatsapp] }
+            enviado_por: { type: integer }
+            enviado_por_nombre: { type: string, example: María Alvarado }
+            enviado_en: { type: string, format: date-time }
 
     AdopcionSinSeguimiento:
       type: object
