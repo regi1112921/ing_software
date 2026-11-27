@@ -37,8 +37,26 @@ jobs:
       - run: npm ci
       - name: Pruebas unitarias (con reporte JUnit)
         run: npm run test:unit:reporte
+      # Falla si la cobertura baja de 95 % de líneas / 90 % de ramas y funciones.
+      # La tabla queda también en el resumen de la ejecución (pestaña Summary de Actions).
       - name: Cobertura de las pruebas unitarias
-        run: npm run test:unit:cobertura
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:unit:cobertura 2>&1 | tee cobertura.txt
+      - name: Resumen de cobertura en GitHub
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '### Pruebas unitarias del backend'
+            echo
+            echo '```'
+            grep -E '^ℹ (tests|pass|fail) ' cobertura.txt | sed 's/^ℹ //'
+            echo
+            sed -n '/start of coverage report/,/end of coverage report/p' cobertura.txt | sed 's/^ℹ //'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Publicar resultados de las unitarias
         if: always()
         uses: actions/upload-artifact@v4

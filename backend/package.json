@@ -11,7 +11,8 @@
     "start": "concurrently -n auth,vet,adop,dash,vol \"npm start -w @huellas/autenticacion\" \"npm start -w @huellas/veterinaria\" \"npm start -w @huellas/adopcion\" \"npm start -w @huellas/dashboard\" \"npm start -w @huellas/voluntariado\"",
     "test": "node --test --test-concurrency=1 \"test/*.test.js\"",
     "test:unit": "node --test \"test/unitarias/*.test.js\"",
-    "test:unit:cobertura": "node --test --experimental-test-coverage \"test/unitarias/*.test.js\"",
+    "test:unit:cobertura": "node --test --experimental-test-coverage --test-coverage-include=\"shared/src/**\" --test-coverage-include=\"services/*/src/services/**\" --test-coverage-include=\"services/*/src/utils/**\" --test-coverage-include=\"services/*/src/permisos.js\" --test-coverage-lines=95 --test-coverage-branches=90 --test-coverage-functions=90 \"test/unitarias/*.test.js\"",
+    "test:todas": "npm run test:unit && npm test",
     "test:unit:reporte": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=reporte-unitarias.xml \"test/unitarias/*.test.js\""
   },
   "engines": {
