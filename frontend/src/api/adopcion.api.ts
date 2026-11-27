@@ -1,6 +1,8 @@
 import { http, query } from './http'
 import type {
   Adopcion,
+  AvisoAdoptante,
+  AvisoRegistrado,
   AdopcionSinSeguimiento,
   DatosSeguimiento,
   Seguimiento,
@@ -36,6 +38,13 @@ export const adopcionApi = {
   crearAdopcion: (datos: DatosAdopcion) => http<Adopcion>(`${BASE}/adopciones`, { method: 'POST', body: datos }),
   cambiarEstadoAdopcion: (id: number | string, cambio: CambioEstadoAdopcion) =>
     http<Adopcion>(`${BASE}/adopciones/${id}/estado`, { method: 'PATCH', body: cambio }),
+
+  // Aviso al adoptante sobre su solicitud (HU-13)
+  borradorAviso: (adopcionId: number | string) => http<AvisoAdoptante>(`${BASE}/adopciones/${adopcionId}/avisos/borrador`),
+  listarAvisos: (adopcionId: number | string) =>
+    http<{ total: number; avisos: AvisoRegistrado[] }>(`${BASE}/adopciones/${adopcionId}/avisos`),
+  registrarAviso: (adopcionId: number | string, mensaje?: string) =>
+    http<AvisoRegistrado>(`${BASE}/adopciones/${adopcionId}/avisos`, { method: 'POST', body: { mensaje } }),
 
   // Seguimiento después de la adopción (HU-10)
   listarSeguimientos: (adopcionId: number | string) =>

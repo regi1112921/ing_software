@@ -1,4 +1,5 @@
 import { campos, conflicto, enTransaccion, hoy, noEncontrado, solicitudInvalida, validar, z } from '@huellas/shared'
+import { generarAviso } from '../utils/avisos.js'
 
 // RF-17: transiciones permitidas (las mismas que aplica la BD en fn_validar_solicitud).
 const TRANSICIONES = {
@@ -39,13 +40,21 @@ const esquemaCrear = z.object({
   solicitud_publica_id: campos.id('La solicitud web').nullish(),
 })
 
-const esquemaCambioEstado = z.object({
-  estado: z.enum(['aprobada', 'rechazada', 'finalizada'], {
-    error: 'El estado debe ser aprobada, rechazada o finalizada.',
-  }),
-  fecha: campos.fecha('La fecha').default(() => hoy()),
-  observaciones: campos.textoOpcional('Las observaciones', 2000),
-})
+const esquemaCambioEstado = z
+  .object({
+    estado: z.enum(['aprobada', 'rechazada', 'finalizada'], {
+      error: 'El estado debe ser aprobada, rechazada o finalizada.',
+    }),
+    fecha: campos.fecha('La fecha').default(() => hoy()),
+    observaciones: campos.textoOpcional('Las observaciones', 2000),
+    // HU-13: obligatorio al rechazar; se le comunica al adoptante. En otro estado se ignora.
+    motivo_rechazo: campos.textoOpcional('El motivo del rechazo', 500),
+  })
+  .superRefine((cambio, ctx) => {
+    if (cambio.estado === 'rechazada' && !cambio.motivo_rechazo) {
+      ctx.addIssue({ code: 'custom', path: ['motivo_rechazo'], message: 'El motivo del rechazo es obligatorio.' })
+    }
+  })
 
 const conTransiciones = (adopcion) => ({ ...adopcion, transiciones_permitidas: TRANSICIONES[adopcion.estado] })
 
@@ -127,10 +136,13 @@ export function crearAdopcionesService({ pool, adopciones, adoptantes, perros, s
           columnaFecha: COLUMNA_FECHA[cambio.estado],
           fecha: cambio.fecha,
           observaciones: cambio.observaciones,
+          motivoRechazo: cambio.estado === 'rechazada' ? cambio.motivo_rechazo : null,
         })
       })
 
-      return obtener(id)
+      // HU-13: al aprobar o rechazar, el mensaje para el adoptante ya va listo.
+      const adopcion = await obtener(id)
+      return { ...adopcion, aviso: generarAviso(adopcion) }
     },
   }
 }

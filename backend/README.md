@@ -87,6 +87,7 @@ con los datos de prueba y prueban los criterios de aceptación de cada HU contra
 | Adopciones (todas las rutas) | ✔ | — | ✔ |
 | Solicitudes web del catálogo (HU-09) | ✔ | — | ✔ |
 | Seguimientos después de la adopción (HU-10 · seguimiento) | ✔ | — | ✔ |
+| Avisos al adoptante (HU-13) | ✔ | — | ✔ |
 | Catálogo público `/publico/*` | sin sesión | sin sesión | sin sesión |
 
 - Sin permiso → `403`. El veterinario recibe la ficha del perro con `adopcion_vigente: null` (no ve datos del adoptante).
@@ -120,7 +121,10 @@ Especificación OpenAPI completa y colección de Postman en [`docs/api/`](../doc
 | GET | `/adopciones` | HU-11 · RF-15 | Listado, de la más reciente a la más antigua |
 | GET | `/adopciones/:id` | HU-11 · RF-16 | Detalle con `transiciones_permitidas` |
 | POST | `/adopciones` | HU-10 · RF-13/14/19 | `{ perro_id, adoptante: { nombre_completo, telefono, direccion, documento_identidad? }, fecha_solicitud?, observaciones? }` |
-| PATCH | `/adopciones/:id/estado` | HU-12 · RF-17/18/19/20 | `{ estado: aprobada\|rechazada\|finalizada, fecha?, observaciones? }` |
+| PATCH | `/adopciones/:id/estado` | HU-12 · RF-17/18/19/20 · HU-13 | `{ estado: aprobada\|rechazada\|finalizada, fecha?, observaciones?, motivo_rechazo? }`. `motivo_rechazo` (máx. 500) es obligatorio al rechazar. Al aprobar o rechazar, la respuesta trae `aviso: { tipo, telefono, mensaje, enlace_whatsapp }` |
+| GET | `/adopciones/:id/avisos/borrador` | HU-13 | Mensaje sugerido para el adoptante según el estado: aprobación con los siguientes pasos, rechazo con el motivo. 409 en proceso o finalizada. No registra nada |
+| POST | `/adopciones/:id/avisos` | HU-13 | `{ mensaje? }` (si no se envía, el sugerido). Registra quién, cuándo, teléfono y texto (201) y devuelve `enlace_whatsapp` (`https://wa.me/<telefono>?text=...`; +591 si el teléfono no tiene código de país). 409 en proceso o finalizada |
+| GET | `/adopciones/:id/avisos` | HU-13 | Avisos enviados, del más reciente al más antiguo |
 | GET | `/adopciones/:id/seguimientos` | HU-10 · seguimiento | Seguimientos de la adopción, del más reciente al más antiguo |
 | POST | `/adopciones/:id/seguimientos` | HU-10 · seguimiento | `{ tipo: visita\|llamada, observaciones, fecha?, con_problemas? }`. Solo adopciones finalizadas (409 si no); la fecha va de la entrega a hoy |
 | PATCH | `/adopciones/:id/seguimientos/:seguimientoId` | HU-10 · seguimiento | `{ con_problemas }`: marca el seguimiento para revisarlo o lo desmarca cuando ya se revisó |

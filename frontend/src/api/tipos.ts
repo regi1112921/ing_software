@@ -107,9 +107,13 @@ export interface Adopcion {
   fecha_rechazo: string | null
   fecha_adopcion: string | null
   observaciones: string | null
+  // HU-13: motivo que se le comunicó al adoptante (solo en rechazadas).
+  motivo_rechazo: string | null
   perro: PerroResumen
   adoptante: Adoptante
   transiciones_permitidas?: EstadoAdopcion[]
+  // HU-13: al aprobar o rechazar, el aviso para el adoptante ya viene listo.
+  aviso?: AvisoAdoptante | null
 }
 
 export interface DatosAdopcion {
@@ -152,6 +156,29 @@ export interface CambioEstadoAdopcion {
   estado: 'aprobada' | 'rechazada' | 'finalizada'
   fecha?: string
   observaciones?: string | null
+  // HU-13: obligatorio al rechazar.
+  motivo_rechazo?: string | null
+}
+
+// ── Aviso al adoptante sobre su solicitud (HU-13) ─────────────────────────────
+
+export type TipoAviso = 'aprobacion' | 'rechazo'
+
+export interface AvisoAdoptante {
+  tipo: TipoAviso
+  // Formato internacional sin "+", como lo pide wa.me.
+  telefono: string
+  mensaje: string
+  enlace_whatsapp: string
+}
+
+export interface AvisoRegistrado extends AvisoAdoptante {
+  id: number
+  solicitud_id: number
+  canal: 'whatsapp'
+  enviado_por: number
+  enviado_por_nombre: string
+  enviado_en: string
 }
 
 // ── Seguimiento después de la adopción (HU-10) ────────────────────────────────

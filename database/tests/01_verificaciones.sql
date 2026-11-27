@@ -190,12 +190,39 @@ select pg_temp.esperar_error('solicitudes: la aprobación no puede ser anterior 
 select pg_temp.esperar_error('solicitudes: no se puede cambiar el perro de una solicitud', '23514',
   $q$ update solicitudes_adopcion set perro_id = pg_temp.id('pruebab') where id = pg_temp.id('sol_1') $q$);
 
+select pg_temp.esperar_error('solicitudes: el motivo de rechazo solo existe en una solicitud rechazada', '23514',
+  $q$ update solicitudes_adopcion set motivo_rechazo = 'Sin espacio.' where id = pg_temp.id('sol_1') $q$);
+select pg_temp.esperar_error('avisos: el de aprobación exige una solicitud aprobada', '23514',
+  $q$ insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por)
+      values (pg_temp.id('sol_1'), 'aprobacion', '5913000000001', 'Hola.', pg_temp.id('u_personal')) $q$);
+
 -- Rechazo: el perro vuelve a estar disponible
-update solicitudes_adopcion set estado = 'rechazada', fecha_rechazo = '2024-02-03' where id = pg_temp.id('sol_1');
+update solicitudes_adopcion set estado = 'rechazada', fecha_rechazo = '2024-02-03', motivo_rechazo = 'Sin espacio.'
+ where id = pg_temp.id('sol_1');
 select pg_temp.verificar('solicitudes: al rechazarla, el perro vuelve a disponible',
   (select estado = 'disponible' from perros where id = pg_temp.id('pruebaa')));
 select pg_temp.esperar_error('solicitudes: una solicitud rechazada no se puede reabrir', '23514',
   $q$ update solicitudes_adopcion set estado = 'en_proceso', fecha_rechazo = null where id = pg_temp.id('sol_1') $q$);
+
+-- HU-13: avisos al adoptante
+select pg_temp.esperar_error('avisos: una solicitud rechazada no recibe aviso de aprobación', '23514',
+  $q$ insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por)
+      values (pg_temp.id('sol_1'), 'aprobacion', '5913000000001', 'Hola.', pg_temp.id('u_personal')) $q$);
+select pg_temp.esperar_error('avisos: el teléfono va en formato internacional sin +', '23514',
+  $q$ insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por)
+      values (pg_temp.id('sol_1'), 'rechazo', '+5913000000001', 'Hola.', pg_temp.id('u_personal')) $q$);
+with n as (
+  insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por)
+  values (pg_temp.id('sol_1'), 'rechazo', '5913000000001', 'Su solicitud no fue aprobada.', pg_temp.id('u_personal'))
+  returning id
+)
+insert into t_ids select 'aviso_1', id from n;
+select pg_temp.verificar('avisos: registra el aviso de rechazo de una solicitud rechazada',
+  (select canal = 'whatsapp' and enviado_en is not null from notificaciones where id = pg_temp.id('aviso_1')));
+select pg_temp.esperar_error('avisos: el registro no se modifica', '23514',
+  $q$ update notificaciones set mensaje = 'Otro texto.' where id = pg_temp.id('aviso_1') $q$);
+select pg_temp.esperar_error('avisos: el registro no se borra', '23514',
+  $q$ delete from notificaciones where id = pg_temp.id('aviso_1') $q$);
 
 -- Segunda solicitud: en_proceso → aprobada → finalizada
 with s as (

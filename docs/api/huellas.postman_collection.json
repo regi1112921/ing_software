@@ -2381,6 +2381,51 @@
           ]
         },
         {
+          "name": "Rechazar sin motivo → 400 (HU-13)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/estado",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"rechazada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "HU-13: el motivo del rechazo es obligatorio porque se le comunica al adoptante."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('el error es del motivo', () => pm.expect(pm.response.json().detalles[0].campo).to.eql('motivo_rechazo'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Aprobar",
           "request": {
             "method": "PATCH",
@@ -2418,7 +2463,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('responde 200', () => pm.response.to.have.status(200));",
-                  "pm.test('aprobada con fecha', () => { const a = pm.response.json(); pm.expect(a.estado).to.eql('aprobada'); pm.expect(a.fecha_aprobacion).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); });"
+                  "pm.test('aprobada con fecha', () => { const a = pm.response.json(); pm.expect(a.estado).to.eql('aprobada'); pm.expect(a.fecha_aprobacion).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); });",
+                  "pm.test('trae el aviso para el adoptante (HU-13)', () => pm.expect(pm.response.json().aviso.tipo).to.eql('aprobacion'));"
                 ]
               }
             }
@@ -2464,6 +2510,114 @@
                 "exec": [
                   "pm.test('responde 409', () => pm.response.to.have.status(409));",
                   "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mensaje sugerido para el adoptante (HU-13)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/avisos/borrador",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "avisos",
+                "borrador"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('aviso de aprobación con los siguientes pasos', () => { const a = pm.response.json(); pm.expect(a.tipo).to.eql('aprobacion'); pm.expect(a.mensaje).to.include('Siguientes pasos'); });",
+                  "pm.test('teléfono con 591 y enlace de wa.me', () => { const a = pm.response.json(); pm.expect(a.telefono).to.match(/^591\\d+$/); pm.expect(a.enlace_whatsapp).to.eql('https://wa.me/' + a.telefono + '?text=' + encodeURIComponent(a.mensaje)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar aviso al adoptante (HU-13)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/avisos",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "avisos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "HU-13: sin mensaje se registra el sugerido; con \"mensaje\", el texto ajustado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('registra quién, cuándo y el texto', () => { const a = pm.response.json(); pm.expect(a.tipo).to.eql('aprobacion'); pm.expect(a.canal).to.eql('whatsapp'); pm.expect(a.enviado_por_nombre).to.be.a('string'); pm.expect(a.enviado_en).to.be.a('string'); pm.expect(a.mensaje).to.include('Siguientes pasos'); });",
+                  "pm.test('devuelve el enlace de WhatsApp', () => pm.expect(pm.response.json().enlace_whatsapp).to.match(/^https:\\/\\/wa\\.me\\/591\\d+\\?text=/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Avisos de la adopción (HU-13)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/avisos",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "avisos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el aviso registrado', () => { const r = pm.response.json(); pm.expect(r.total).to.eql(1); pm.expect(r.avisos[0].tipo).to.eql('aprobacion'); });"
                 ]
               }
             }
@@ -2553,6 +2707,37 @@
                 "exec": [
                   "pm.test('responde 400', () => pm.response.to.have.status(400));",
                   "pm.test('detalle por campo: estado', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['estado']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aviso de una adopción finalizada → 409 (HU-13)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/avisos/borrador",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "avisos",
+                "borrador"
+              ]
+            },
+            "description": "HU-13: solo se avisa al aprobar o rechazar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));"
                 ]
               }
             }
