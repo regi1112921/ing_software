@@ -9,7 +9,10 @@
   "scripts": {
     "dev": "concurrently -n auth,vet,adop,dash,vol -c blue,green,magenta,cyan,yellow \"npm run dev -w @huellas/autenticacion\" \"npm run dev -w @huellas/veterinaria\" \"npm run dev -w @huellas/adopcion\" \"npm run dev -w @huellas/dashboard\" \"npm run dev -w @huellas/voluntariado\"",
     "start": "concurrently -n auth,vet,adop,dash,vol \"npm start -w @huellas/autenticacion\" \"npm start -w @huellas/veterinaria\" \"npm start -w @huellas/adopcion\" \"npm start -w @huellas/dashboard\" \"npm start -w @huellas/voluntariado\"",
-    "test": "node --test --test-concurrency=1 \"test/*.test.js\""
+    "test": "node --test --test-concurrency=1 \"test/*.test.js\"",
+    "test:unit": "node --test \"test/unitarias/*.test.js\"",
+    "test:unit:cobertura": "node --test --experimental-test-coverage \"test/unitarias/*.test.js\"",
+    "test:unit:reporte": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=reporte-unitarias.xml \"test/unitarias/*.test.js\""
   },
   "engines": {
     "node": ">=20"
