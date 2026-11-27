@@ -292,6 +292,7 @@ create trigger trg_solicitudes_publicas_actualizado_en
   for each row execute function fn_actualizar_timestamp();
 
 -- -----------------------------------------------------------------------------
+-- -----------------------------------------------------------------------------
 -- seguimientos_adopcion (HU-10)
 -- Visitas o llamadas del responsable de adopciones después de entregar el perro,
 -- para comprobar que está bien en su nuevo hogar. Solo se registran sobre

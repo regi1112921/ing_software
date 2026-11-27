@@ -45,6 +45,7 @@ export function crearSolicitudesPublicasRepository(pool) {
       return rows[0] ?? null
     },
 
+
     // Bloquea la fila dentro de una transacción (para convertirla o descartarla).
     async obtenerParaActualizar(cliente, id) {
       const { rows } = await cliente.query('select id, perro_id, estado from solicitudes_publicas where id = $1 for update', [id])

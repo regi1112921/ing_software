@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, CheckCircle, ClipboardList, Heart, PawPrint, Plus } from 'lucide-react'
+import { AlertTriangle, CheckCircle, ClipboardList, Download, Heart, PawPrint, Plus } from 'lucide-react'
 import { dashboardApi } from '@/api/dashboard.api'
 import { useSesion } from '@/shared/sesion/SesionContext'
 import { useCarga } from '@/shared/hooks/useCarga'
@@ -17,12 +18,30 @@ import TarjetaIndicador from '../components/TarjetaIndicador'
 // Solo para el rol administrador (App.tsx y el servicio de Dashboard lo validan).
 export default function DashboardPage() {
   const { usuario } = useSesion()
+  const [tipoReporte, setTipoReporte] = useState<'perros' | 'adopciones' | 'atenciones'>('perros')
+  const [formatoReporte, setFormatoReporte] = useState<'pdf' | 'excel'>('pdf')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
+  const [descargando, setDescargando] = useState(false)
+  const [errorReporte, setErrorReporte] = useState<string | null>(null)
   const { datos, error, cargando, recargar } = useCarga(() =>
     Promise.all([dashboardApi.obtenerResumen(), dashboardApi.obtenerPerrosEnTratamiento(), dashboardApi.obtenerAdopcionesPorMes()]),
   )
   const [resumen, tratamiento, adopcionesPorMes] = datos ?? []
   const nombre = usuario?.nombre_completo.split(' ')[0]
   const nombreMesActual = new Date().toLocaleDateString('es', { month: 'long' })
+
+  async function descargarReporte() {
+    setDescargando(true)
+    setErrorReporte(null)
+    try {
+      await dashboardApi.descargarReporte(tipoReporte, formatoReporte, desde || undefined, hasta || undefined)
+    } catch (error) {
+      setErrorReporte(error instanceof Error ? error.message : 'No se pudo generar el reporte.')
+    } finally {
+      setDescargando(false)
+    }
+  }
 
   return (
     <>
@@ -40,6 +59,31 @@ export default function DashboardPage() {
         {cargando && !datos && <Cargando />}
         {resumen && tratamiento && adopcionesPorMes && (
           <>
+            <section className="bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-end gap-3">
+              <label className="text-sm font-semibold text-gray-700">Reporte
+                <select value={tipoReporte} onChange={(e) => setTipoReporte(e.target.value as typeof tipoReporte)} className="mt-1 block rounded-lg border border-gray-300 px-3 py-2">
+                  <option value="perros">Perros</option>
+                  <option value="adopciones">Adopciones</option>
+                  <option value="atenciones">Atenciones veterinarias</option>
+                </select>
+              </label>
+              <label className="text-sm font-semibold text-gray-700">Desde
+                <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className="mt-1 block rounded-lg border border-gray-300 px-3 py-2" />
+              </label>
+              <label className="text-sm font-semibold text-gray-700">Hasta
+                <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className="mt-1 block rounded-lg border border-gray-300 px-3 py-2" />
+              </label>
+              <label className="text-sm font-semibold text-gray-700">Formato
+                <select value={formatoReporte} onChange={(e) => setFormatoReporte(e.target.value as typeof formatoReporte)} className="mt-1 block rounded-lg border border-gray-300 px-3 py-2">
+                  <option value="pdf">PDF</option>
+                  <option value="excel">Excel (.csv)</option>
+                </select>
+              </label>
+              <button type="button" onClick={descargarReporte} disabled={descargando} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-forest-600 text-white font-semibold disabled:opacity-60">
+                <Download size={15} /> {descargando ? 'Generando...' : 'Descargar'}
+              </button>
+              {errorReporte && <p className="text-sm text-red-600">{errorReporte}</p>}
+            </section>
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
               <TarjetaIndicador
                 etiqueta="Perros en el albergue"

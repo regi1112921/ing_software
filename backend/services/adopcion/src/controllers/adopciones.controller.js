@@ -16,5 +16,6 @@ export function crearAdopcionesController(adopcionesService) {
     async cambiarEstado(req, res) {
       res.json(await adopcionesService.cambiarEstado(req.params.id, req.body))
     },
+
   }
 }

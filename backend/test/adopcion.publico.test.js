@@ -203,6 +203,7 @@ describe('Servicio de Adopción · catálogo público (HU-09)', () => {
       assert.equal((await publico.get(`/publico/perros/${pendiente.perro_id}`)).status, 404)
     })
 
+
     it('una solicitud ya revisada no se puede volver a convertir ni descartar (409)', async () => {
       assert.equal((await privado.post(`/solicitudes-publicas/${pendiente.id}/descartar`)).status, 409)
     })

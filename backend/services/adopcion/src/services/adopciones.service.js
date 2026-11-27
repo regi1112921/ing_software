@@ -128,9 +128,11 @@ export function crearAdopcionesService({ pool, adopciones, adoptantes, perros, s
           fecha: cambio.fecha,
           observaciones: cambio.observaciones,
         })
+
       })
 
       return obtener(id)
     },
+
   }
 }

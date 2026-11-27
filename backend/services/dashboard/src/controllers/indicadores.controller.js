@@ -11,5 +11,12 @@ export function crearIndicadoresController(indicadoresService) {
     async adopcionesPorMes(req, res) {
       res.json(await indicadoresService.adopcionesPorMes())
     },
+
+    async reportes(req, res) {
+      const reporte = await indicadoresService.reporte(req.query)
+      res.setHeader('Content-Type', reporte.tipo)
+      res.setHeader('Content-Disposition', `attachment; filename="${reporte.nombre}"`)
+      res.send(reporte.contenido)
+    },
   }
 }
