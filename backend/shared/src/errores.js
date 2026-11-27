@@ -86,6 +86,9 @@ export function manejadorErrores(error, req, res, next) {
   if (!http && error.type === 'entity.parse.failed') {
     http = new ErrorHttp(400, 'El cuerpo de la petición no es un JSON válido.')
   }
+  if (!http && error.type === 'entity.too.large') {
+    http = new ErrorHttp(413, 'Los datos enviados superan el tamaño máximo permitido.')
+  }
   if (!http && typeof error.code === 'string' && /^[0-9A-Z]{5}$/.test(error.code)) {
     http = desdePostgres(error)
   }
