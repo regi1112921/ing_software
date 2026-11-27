@@ -91,6 +91,7 @@ create table solicitudes_adopcion (
   fecha_rechazo    date,
   fecha_adopcion   date,
   observaciones    text,
+  motivo_rechazo   text,
   registrado_por   bigint      not null references usuarios (id),
   creado_en        timestamptz not null default now(),
   actualizado_en   timestamptz not null default now(),
@@ -108,11 +109,16 @@ create table solicitudes_adopcion (
         (fecha_aprobacion is null or fecha_aprobacion >= fecha_solicitud)
     and (fecha_rechazo    is null or fecha_rechazo    >= coalesce(fecha_aprobacion, fecha_solicitud))
     and (fecha_adopcion   is null or fecha_adopcion   >= fecha_aprobacion)
+  ),
+  -- HU-13: el motivo se le comunica al adoptante; solo existe en una solicitud rechazada.
+  constraint ck_solicitudes_motivo_rechazo check (
+    motivo_rechazo is null or (estado = 'rechazada' and btrim(motivo_rechazo) <> '' and length(motivo_rechazo) <= 500)
   )
 );
 
 comment on table  solicitudes_adopcion is 'Proceso de adopción de un perro por un adoptante, desde la solicitud hasta la entrega.';
 comment on column solicitudes_adopcion.fecha_adopcion is 'Fecha de entrega del perro. Solo existe cuando la solicitud está finalizada.';
+comment on column solicitudes_adopcion.motivo_rechazo is 'HU-13: motivo que se le comunica al adoptante. Solo en solicitudes rechazadas (obligatorio al rechazar desde la API).';
 
 -- Regla confirmada: un perro solo puede tener una solicitud activa a la vez.
 create unique index uq_solicitudes_activa_por_perro
@@ -357,3 +363,65 @@ $$;
 create trigger trg_seguimientos_validar
   before insert or update of solicitud_id, fecha on seguimientos_adopcion
   for each row execute function fn_validar_seguimiento();
+
+-- -----------------------------------------------------------------------------
+-- notificaciones (HU-13)
+-- Registro de los avisos al adoptante sobre su solicitud (aprobación o rechazo):
+-- quién lo envió, cuándo, a qué teléfono y el texto enviado. El aviso se abre en
+-- WhatsApp (https://wa.me/...) desde el navegador; aquí solo queda el registro.
+-- -----------------------------------------------------------------------------
+create table notificaciones (
+  id           bigint generated always as identity primary key,
+  solicitud_id bigint      not null references solicitudes_adopcion (id),
+  tipo         text        not null,
+  canal        text        not null default 'whatsapp',
+  telefono     text        not null,
+  mensaje      text        not null,
+  enviado_por  bigint      not null references usuarios (id),
+  enviado_en   timestamptz not null default now(),
+
+  constraint ck_notificaciones_tipo     check (tipo in ('aprobacion', 'rechazo')),
+  constraint ck_notificaciones_canal    check (canal in ('whatsapp')),
+  -- Número internacional sin '+' (formato de wa.me), con código de país.
+  constraint ck_notificaciones_telefono check (telefono ~ '^[0-9]{8,15}$'),
+  constraint ck_notificaciones_mensaje  check (btrim(mensaje) <> '' and length(mensaje) <= 2000)
+);
+
+comment on table  notificaciones is 'HU-13: avisos enviados al adoptante sobre su solicitud (aprobación o rechazo). Es un registro: no se edita ni se borra.';
+comment on column notificaciones.telefono is 'Teléfono al que se envió, en formato internacional sin + (se antepone 591 si no tenía código de país).';
+comment on column notificaciones.mensaje is 'Texto enviado tal como quedó (el responsable puede ajustarlo antes de enviarlo).';
+
+create index ix_notificaciones_solicitud   on notificaciones (solicitud_id, enviado_en desc);
+create index ix_notificaciones_enviado_por on notificaciones (enviado_por);
+
+-- El aviso debe corresponder al estado de la solicitud: aprobación solo si está
+-- aprobada; rechazo solo si está rechazada. El registro no se modifica después.
+create or replace function fn_validar_notificacion()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_estado text;
+begin
+  if tg_op <> 'INSERT' then
+    raise exception 'El registro de avisos no se puede modificar ni borrar.'
+      using errcode = 'check_violation';
+  end if;
+
+  select estado into v_estado from solicitudes_adopcion where id = new.solicitud_id;
+
+  if new.tipo = 'aprobacion' and v_estado is distinct from 'aprobada' then
+    raise exception 'El aviso de aprobación exige una solicitud aprobada (estado actual: %).', coalesce(v_estado, 'inexistente')
+      using errcode = 'check_violation';
+  elsif new.tipo = 'rechazo' and v_estado is distinct from 'rechazada' then
+    raise exception 'El aviso de rechazo exige una solicitud rechazada (estado actual: %).', coalesce(v_estado, 'inexistente')
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_notificaciones_validar
+  before insert or update or delete on notificaciones
+  for each row execute function fn_validar_notificacion();

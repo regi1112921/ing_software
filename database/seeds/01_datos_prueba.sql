@@ -98,7 +98,8 @@ values (
 );
 update solicitudes_adopcion
    set estado = 'rechazada', fecha_rechazo = '2024-02-10',
-       observaciones = 'La vivienda no tiene espacio adecuado para un perro grande.'
+       observaciones = 'La vivienda no tiene espacio adecuado para un perro grande.',
+       motivo_rechazo = 'La vivienda no tiene espacio adecuado para un perro de su tamaño.'
  where perro_id = (select id from perros where nombre = 'Luna');
 
 -- Bella → Carlos: en_proceso (Bella queda en adopción)
@@ -204,3 +205,18 @@ join perros   p on p.nombre = v.perro
 join usuarios u on u.correo = v.veterinario;
 
 commit;
+
+-- -----------------------------------------------------------------------------
+-- Avisos al adoptante (HU-13). A Jorge se le avisó por WhatsApp del rechazo de su
+-- solicitud por Luna.
+-- -----------------------------------------------------------------------------
+insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por, enviado_en)
+select s.id, 'rechazo', '591' || a.telefono,
+       'Hola, ' || a.nombre_completo || '. Le escribimos del albergue Huellas sobre su solicitud para adoptar a Luna. '
+       || 'Lamentamos informarle que esta vez no pudimos aprobarla. Motivo: ' || s.motivo_rechazo
+       || ' Gracias por querer darle un hogar a uno de nuestros perros; puede volver a postular cuando quiera.',
+       u.id, '2024-02-10 10:30:00-04'
+from solicitudes_adopcion s
+join adoptantes a on a.id = s.adoptante_id
+cross join (select id from usuarios where correo = 'maria.alvarado@peluchin.test') u
+where s.perro_id = (select id from perros where nombre = 'Luna') and s.estado = 'rechazada';
