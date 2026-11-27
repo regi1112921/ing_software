@@ -30,7 +30,7 @@ envVarGroups:
       - key: AUTENTICACION_URL
         value: https://huellas-autenticacion-e8jv.onrender.com
       - key: CORS_ORIGENES
-        value: https://huellas-panel.vercel.app,https://huellas-catalogo.vercel.app
+        value: https://ing-software-one.vercel.app,https://ing-software-q2ia.vercel.app
 
 services:
   - type: web
