@@ -1,8 +1,8 @@
 // Pruebas unitarias · validación de entrada (shared/validacion.js).
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { campos, hoy, validar, z } from '../../shared/src/validacion.js'
-import { ErrorHttp } from '../../shared/src/errores.js'
+import { campos, hoy, validar, z } from '@huellas/shared'
+import { ErrorHttp } from '@huellas/shared'
 
 const esquema = z.object({
   nombre: campos.texto('nombre', 10),
