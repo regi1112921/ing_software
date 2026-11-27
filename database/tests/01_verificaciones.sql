@@ -65,7 +65,7 @@ with u as (
     ('Prueba Veterinaria', 'prueba.veterinaria@peluchin.test', 'veterinario')
   returning id, rol
 )
-insert into t_ids select 'u_' || rol, id from u;
+insert into t_ids select case rol when 'responsable_adopciones' then 'u_personal' else 'u_' || rol end, id from u;
 
 with p as (
   insert into perros (nombre, sexo, raza_id, tamano, fecha_ingreso, estado, registrado_por) values
@@ -190,12 +190,39 @@ select pg_temp.esperar_error('solicitudes: la aprobación no puede ser anterior 
 select pg_temp.esperar_error('solicitudes: no se puede cambiar el perro de una solicitud', '23514',
   $q$ update solicitudes_adopcion set perro_id = pg_temp.id('pruebab') where id = pg_temp.id('sol_1') $q$);
 
+select pg_temp.esperar_error('solicitudes: el motivo de rechazo solo existe en una solicitud rechazada', '23514',
+  $q$ update solicitudes_adopcion set motivo_rechazo = 'Sin espacio.' where id = pg_temp.id('sol_1') $q$);
+select pg_temp.esperar_error('avisos: el de aprobación exige una solicitud aprobada', '23514',
+  $q$ insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por)
+      values (pg_temp.id('sol_1'), 'aprobacion', '5913000000001', 'Hola.', pg_temp.id('u_personal')) $q$);
+
 -- Rechazo: el perro vuelve a estar disponible
-update solicitudes_adopcion set estado = 'rechazada', fecha_rechazo = '2024-02-03' where id = pg_temp.id('sol_1');
+update solicitudes_adopcion set estado = 'rechazada', fecha_rechazo = '2024-02-03', motivo_rechazo = 'Sin espacio.'
+ where id = pg_temp.id('sol_1');
 select pg_temp.verificar('solicitudes: al rechazarla, el perro vuelve a disponible',
   (select estado = 'disponible' from perros where id = pg_temp.id('pruebaa')));
 select pg_temp.esperar_error('solicitudes: una solicitud rechazada no se puede reabrir', '23514',
   $q$ update solicitudes_adopcion set estado = 'en_proceso', fecha_rechazo = null where id = pg_temp.id('sol_1') $q$);
+
+-- HU-13: avisos al adoptante
+select pg_temp.esperar_error('avisos: una solicitud rechazada no recibe aviso de aprobación', '23514',
+  $q$ insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por)
+      values (pg_temp.id('sol_1'), 'aprobacion', '5913000000001', 'Hola.', pg_temp.id('u_personal')) $q$);
+select pg_temp.esperar_error('avisos: el teléfono va en formato internacional sin +', '23514',
+  $q$ insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por)
+      values (pg_temp.id('sol_1'), 'rechazo', '+5913000000001', 'Hola.', pg_temp.id('u_personal')) $q$);
+with n as (
+  insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por)
+  values (pg_temp.id('sol_1'), 'rechazo', '5913000000001', 'Su solicitud no fue aprobada.', pg_temp.id('u_personal'))
+  returning id
+)
+insert into t_ids select 'aviso_1', id from n;
+select pg_temp.verificar('avisos: registra el aviso de rechazo de una solicitud rechazada',
+  (select canal = 'whatsapp' and enviado_en is not null from notificaciones where id = pg_temp.id('aviso_1')));
+select pg_temp.esperar_error('avisos: el registro no se modifica', '23514',
+  $q$ update notificaciones set mensaje = 'Otro texto.' where id = pg_temp.id('aviso_1') $q$);
+select pg_temp.esperar_error('avisos: el registro no se borra', '23514',
+  $q$ delete from notificaciones where id = pg_temp.id('aviso_1') $q$);
 
 -- Segunda solicitud: en_proceso → aprobada → finalizada
 with s as (
@@ -220,6 +247,33 @@ select pg_temp.esperar_error('solicitudes: un perro adoptado no recibe nuevas so
       values (pg_temp.id('pruebaa'), pg_temp.id('adoptante_1'), pg_temp.id('u_personal')) $q$);
 select pg_temp.esperar_error('perros: un perro adoptado no vuelve a disponible a mano', '23514',
   $q$ update perros set estado = 'disponible' where id = pg_temp.id('pruebaa') $q$);
+
+-- HU-14: historias de adopciones exitosas
+select pg_temp.esperar_error('historias: solo de adopciones finalizadas', '23514',
+  $q$ insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, publicado_por)
+      values (pg_temp.id('sol_1'), 'Título', 'Relato.', 'https://example.com/a.jpg', pg_temp.id('u_personal')) $q$);
+select pg_temp.esperar_error('historias: no se publica antes de la entrega del perro', '23514',
+  $q$ insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, fecha_publicacion, publicado_por)
+      values (pg_temp.id('sol_2'), 'Título', 'Relato.', 'https://example.com/a.jpg', '2024-02-19', pg_temp.id('u_personal')) $q$);
+select pg_temp.esperar_error('historias: la foto debe ser una URL http(s)', '23514',
+  $q$ insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, publicado_por)
+      values (pg_temp.id('sol_2'), 'Título', 'Relato.', 'C:\fotos\a.jpg', pg_temp.id('u_personal')) $q$);
+with h as (
+  insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, fecha_publicacion, publicado_por)
+  values (pg_temp.id('sol_2'), 'Nuevo hogar', 'Ya está en casa.', 'https://example.com/a.jpg', '2024-03-01', pg_temp.id('u_personal'))
+  returning id
+)
+insert into t_ids select 'historia_1', id from h;
+select pg_temp.verificar('historias: se publica visible para una adopción finalizada',
+  (select visible from historias_adopcion where id = pg_temp.id('historia_1')));
+select pg_temp.esperar_error('historias: una sola historia por adopción', '23505',
+  $q$ insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, publicado_por)
+      values (pg_temp.id('sol_2'), 'Otra', 'Otro relato.', 'https://example.com/b.jpg', pg_temp.id('u_personal')) $q$);
+update historias_adopcion set visible = false where id = pg_temp.id('historia_1');
+select pg_temp.verificar('historias: se oculta sin borrarla',
+  (select not visible from historias_adopcion where id = pg_temp.id('historia_1')));
+select pg_temp.esperar_error('historias: no se borra', '23514',
+  $q$ delete from historias_adopcion where id = pg_temp.id('historia_1') $q$);
 
 -- -----------------------------------------------------------------------------
 -- 4. Historial médico
@@ -250,6 +304,39 @@ with r as (
   returning 1
 )
 select pg_temp.verificar('vacunas: acepta una vacuna ligada a una consulta del mismo perro', (select count(*) = 1 from r));
+
+-- Citas (HU-11)
+select pg_temp.esperar_error('citas: la hora debe ser en bloques de 30 minutos', '23514',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+      values (pg_temp.id('pruebab'), pg_temp.id('u_veterinario'), '2030-01-10', '09:15', 'consulta', 'Control', pg_temp.id('u_veterinario')) $q$);
+select pg_temp.esperar_error('citas: el tipo debe ser consulta, vacuna o cirugía', '23514',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+      values (pg_temp.id('pruebab'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'baño', 'Control', pg_temp.id('u_veterinario')) $q$);
+select pg_temp.esperar_error('citas: el responsable debe tener rol veterinario', '23514',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+      values (pg_temp.id('pruebab'), pg_temp.id('u_personal'), '2030-01-10', '09:00', 'consulta', 'Control', pg_temp.id('u_veterinario')) $q$);
+select pg_temp.esperar_error('citas: atendida exige la consulta del historial', '23514',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, estado, registrado_por)
+      values (pg_temp.id('pruebab'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'consulta', 'Control', 'atendida', pg_temp.id('u_veterinario')) $q$);
+
+with c as (
+  insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+  values (pg_temp.id('pruebab'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'consulta', 'Control', pg_temp.id('u_veterinario'))
+  returning id
+)
+insert into t_ids select 'cita_b', id from c;
+
+select pg_temp.esperar_error('citas: no se agendan dos citas a la misma fecha y hora', '23505',
+  $q$ insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+      values (pg_temp.id('pruebaa'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'vacuna', 'Refuerzo', pg_temp.id('u_veterinario')) $q$);
+
+update citas set estado = 'cancelada', motivo_cancelacion = 'Reprogramada' where id = pg_temp.id('cita_b');
+with r as (
+  insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, registrado_por)
+  values (pg_temp.id('pruebaa'), pg_temp.id('u_veterinario'), '2030-01-10', '09:00', 'vacuna', 'Refuerzo', pg_temp.id('u_veterinario'))
+  returning 1
+)
+select pg_temp.verificar('citas: una cita cancelada libera su horario', (select count(*) = 1 from r));
 
 -- -----------------------------------------------------------------------------
 -- 5. Borrado protegido (no se pierde el historial)

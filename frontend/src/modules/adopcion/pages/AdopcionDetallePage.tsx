@@ -12,17 +12,19 @@ import InsigniaEstado from '@/shared/components/InsigniaEstado'
 import MensajeError from '@/shared/components/MensajeError'
 import { TARJETA } from '@/shared/utils/estilos'
 import { NOMBRE_SEXO, formatearEdad, formatearFecha } from '@/shared/utils/formato'
+import AvisoAdoptante from '../components/AvisoAdoptante'
 import CambioEstadoAdopcion from '../components/CambioEstadoAdopcion'
 import LineaTiempoAdopcion from '../components/LineaTiempoAdopcion'
 import SeguimientosAdopcion from '../components/SeguimientosAdopcion'
 
 const AVISO_CAMBIO: Record<string, (perro: string) => string> = {
-  aprobada: () => 'Adopción aprobada.',
+  aprobada: () => 'Adopción aprobada. Ya puedes enviarle el aviso al adoptante.',
   finalizada: (perro) => `Adopción finalizada. ${perro} ahora figura como adoptado.`,
-  rechazada: (perro) => `Adopción rechazada. ${perro} volvió a estar disponible.`,
+  rechazada: (perro) => `Adopción rechazada. ${perro} volvió a estar disponible. Ya puedes enviarle el aviso al adoptante.`,
 }
 
 // HU-11 · Detalle de adopción  ·  HU-12 · Actualizar su estado  ·  HU-10 (sprint 2) · Seguimientos
+// HU-13 · Aviso al adoptante al aprobar o rechazar su solicitud
 export default function AdopcionDetallePage() {
   const { id } = useParams()
   const navegar = useNavigate()
@@ -58,6 +60,10 @@ export default function AdopcionDetallePage() {
           <div className="xl:col-span-2 space-y-5">
             {error && <MensajeError mensaje={error} onReintentar={recargar} />}
             <CambioEstadoAdopcion key={adopcion.estado} adopcion={adopcion} onCambiado={alCambiar} />
+            <AvisoAdoptante
+              adopcion={adopcion}
+              onEnviado={(aviso) => navegar(pathname + hash, { replace: true, state: { aviso } })}
+            />
             <SeguimientosAdopcion
               adopcion={adopcion}
               onCambio={(aviso) => navegar(pathname + hash, { replace: true, state: { aviso } })}
@@ -103,6 +109,12 @@ export default function AdopcionDetallePage() {
               <FileText size={15} className="text-forest-500" /> Proceso
             </h2>
             <LineaTiempoAdopcion adopcion={adopcion} />
+            {adopcion.motivo_rechazo && (
+              <div className="mt-6 pt-5 border-t border-warm-100">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Motivo del rechazo</p>
+                <p className="text-sm text-gray-700 whitespace-pre-line">{adopcion.motivo_rechazo}</p>
+              </div>
+            )}
             {adopcion.observaciones && (
               <div className="mt-6 pt-5 border-t border-warm-100">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Observaciones</p>

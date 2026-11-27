@@ -91,6 +91,7 @@ create table solicitudes_adopcion (
   fecha_rechazo    date,
   fecha_adopcion   date,
   observaciones    text,
+  motivo_rechazo   text,
   registrado_por   bigint      not null references usuarios (id),
   creado_en        timestamptz not null default now(),
   actualizado_en   timestamptz not null default now(),
@@ -108,11 +109,16 @@ create table solicitudes_adopcion (
         (fecha_aprobacion is null or fecha_aprobacion >= fecha_solicitud)
     and (fecha_rechazo    is null or fecha_rechazo    >= coalesce(fecha_aprobacion, fecha_solicitud))
     and (fecha_adopcion   is null or fecha_adopcion   >= fecha_aprobacion)
+  ),
+  -- HU-13: el motivo se le comunica al adoptante; solo existe en una solicitud rechazada.
+  constraint ck_solicitudes_motivo_rechazo check (
+    motivo_rechazo is null or (estado = 'rechazada' and btrim(motivo_rechazo) <> '' and length(motivo_rechazo) <= 500)
   )
 );
 
 comment on table  solicitudes_adopcion is 'Proceso de adopción de un perro por un adoptante, desde la solicitud hasta la entrega.';
 comment on column solicitudes_adopcion.fecha_adopcion is 'Fecha de entrega del perro. Solo existe cuando la solicitud está finalizada.';
+comment on column solicitudes_adopcion.motivo_rechazo is 'HU-13: motivo que se le comunica al adoptante. Solo en solicitudes rechazadas (obligatorio al rechazar desde la API).';
 
 -- Regla confirmada: un perro solo puede tener una solicitud activa a la vez.
 create unique index uq_solicitudes_activa_por_perro
@@ -358,3 +364,143 @@ $$;
 create trigger trg_seguimientos_validar
   before insert or update of solicitud_id, fecha on seguimientos_adopcion
   for each row execute function fn_validar_seguimiento();
+
+-- -----------------------------------------------------------------------------
+-- notificaciones (HU-13)
+-- Registro de los avisos al adoptante sobre su solicitud (aprobación o rechazo):
+-- quién lo envió, cuándo, a qué teléfono y el texto enviado. El aviso se abre en
+-- WhatsApp (https://wa.me/...) desde el navegador; aquí solo queda el registro.
+-- -----------------------------------------------------------------------------
+create table notificaciones (
+  id           bigint generated always as identity primary key,
+  solicitud_id bigint      not null references solicitudes_adopcion (id),
+  tipo         text        not null,
+  canal        text        not null default 'whatsapp',
+  telefono     text        not null,
+  mensaje      text        not null,
+  enviado_por  bigint      not null references usuarios (id),
+  enviado_en   timestamptz not null default now(),
+
+  constraint ck_notificaciones_tipo     check (tipo in ('aprobacion', 'rechazo')),
+  constraint ck_notificaciones_canal    check (canal in ('whatsapp')),
+  -- Número internacional sin '+' (formato de wa.me), con código de país.
+  constraint ck_notificaciones_telefono check (telefono ~ '^[0-9]{8,15}$'),
+  constraint ck_notificaciones_mensaje  check (btrim(mensaje) <> '' and length(mensaje) <= 2000)
+);
+
+comment on table  notificaciones is 'HU-13: avisos enviados al adoptante sobre su solicitud (aprobación o rechazo). Es un registro: no se edita ni se borra.';
+comment on column notificaciones.telefono is 'Teléfono al que se envió, en formato internacional sin + (se antepone 591 si no tenía código de país).';
+comment on column notificaciones.mensaje is 'Texto enviado tal como quedó (el responsable puede ajustarlo antes de enviarlo).';
+
+create index ix_notificaciones_solicitud   on notificaciones (solicitud_id, enviado_en desc);
+create index ix_notificaciones_enviado_por on notificaciones (enviado_por);
+
+-- El aviso debe corresponder al estado de la solicitud: aprobación solo si está
+-- aprobada; rechazo solo si está rechazada. El registro no se modifica después.
+create or replace function fn_validar_notificacion()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_estado text;
+begin
+  if tg_op <> 'INSERT' then
+    raise exception 'El registro de avisos no se puede modificar ni borrar.'
+      using errcode = 'check_violation';
+  end if;
+
+  select estado into v_estado from solicitudes_adopcion where id = new.solicitud_id;
+
+  if new.tipo = 'aprobacion' and v_estado is distinct from 'aprobada' then
+    raise exception 'El aviso de aprobación exige una solicitud aprobada (estado actual: %).', coalesce(v_estado, 'inexistente')
+      using errcode = 'check_violation';
+  elsif new.tipo = 'rechazo' and v_estado is distinct from 'rechazada' then
+    raise exception 'El aviso de rechazo exige una solicitud rechazada (estado actual: %).', coalesce(v_estado, 'inexistente')
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_notificaciones_validar
+  before insert or update or delete on notificaciones
+  for each row execute function fn_validar_notificacion();
+
+-- -----------------------------------------------------------------------------
+-- historias_adopcion (HU-14)
+-- Historias de adopciones exitosas que se muestran en el catálogo público: una
+-- foto y un relato ligados a una adopción finalizada (una historia por adopción).
+-- No se borran: se ocultan (visible = false) y se pueden volver a mostrar.
+-- -----------------------------------------------------------------------------
+create table historias_adopcion (
+  id                bigint generated always as identity primary key,
+  solicitud_id      bigint      not null references solicitudes_adopcion (id),
+  titulo            text        not null,
+  relato            text        not null,
+  foto_url          text        not null,
+  fecha_publicacion date        not null default current_date,
+  visible           boolean     not null default true,
+  publicado_por     bigint      not null references usuarios (id),
+  creado_en         timestamptz not null default now(),
+  actualizado_en    timestamptz not null default now(),
+
+  -- Una sola historia por adopción.
+  constraint uq_historias_solicitud unique (solicitud_id),
+  constraint ck_historias_titulo    check (btrim(titulo) <> '' and length(titulo) <= 120),
+  constraint ck_historias_relato    check (btrim(relato) <> '' and length(relato) <= 2000),
+  constraint ck_historias_foto_url  check (foto_url ~ '^https?://')
+);
+
+comment on table  historias_adopcion is 'HU-14: historias de adopciones exitosas (foto y relato) que se muestran en el catálogo público. No se borran: se ocultan.';
+comment on column historias_adopcion.foto_url is 'URL pública de la foto del perro en su nuevo hogar. Se guarda solo la referencia, no la imagen.';
+comment on column historias_adopcion.fecha_publicacion is 'Fecha con la que se ordena la sección pública (la más reciente primero).';
+comment on column historias_adopcion.visible is 'false = oculta: no aparece en el catálogo público, pero se conserva.';
+
+-- Sección pública: solo las visibles, de la más reciente a la más antigua.
+create index ix_historias_publicas      on historias_adopcion (fecha_publicacion desc, id desc) where visible;
+create index ix_historias_publicado_por on historias_adopcion (publicado_por);
+
+create trigger trg_historias_actualizado_en
+  before update on historias_adopcion
+  for each row execute function fn_actualizar_timestamp();
+
+-- La historia es de una adopción finalizada (perro entregado), no se publica antes
+-- de la entrega, no se mueve a otra adopción y no se borra (se oculta).
+create or replace function fn_validar_historia()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_estado         text;
+  v_fecha_adopcion date;
+begin
+  if tg_op = 'DELETE' then
+    raise exception 'Una historia no se borra: se oculta.'
+      using errcode = 'check_violation';
+  end if;
+
+  if tg_op = 'UPDATE' and new.solicitud_id <> old.solicitud_id then
+    raise exception 'No se puede mover una historia a otra adopción.'
+      using errcode = 'check_violation';
+  end if;
+
+  select estado, fecha_adopcion into v_estado, v_fecha_adopcion
+    from solicitudes_adopcion where id = new.solicitud_id;
+
+  if v_estado is distinct from 'finalizada' then
+    raise exception 'Solo se publican historias de adopciones finalizadas (estado actual: %).', coalesce(v_estado, 'inexistente')
+      using errcode = 'check_violation';
+  end if;
+  if new.fecha_publicacion < v_fecha_adopcion then
+    raise exception 'La historia no puede publicarse antes de la entrega del perro (%).', v_fecha_adopcion
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_historias_validar
+  before insert or update of solicitud_id, fecha_publicacion or delete on historias_adopcion
+  for each row execute function fn_validar_historia();

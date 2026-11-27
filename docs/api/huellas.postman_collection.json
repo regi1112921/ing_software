@@ -1777,6 +1777,413 @@
               }
             }
           ]
+        },
+        {
+          "name": "Agendar cita (HU-11)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/citas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "citas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"fecha\": \"{{citaFecha}}\",\n  \"hora\": \"{{citaHora}}\",\n  \"tipo\": \"consulta\",\n  \"motivo\": \"Control desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Un día y un bloque de 30 minutos al azar dentro de 30 a 300 días, para no chocar con citas de otras corridas.",
+                  "const fecha = new Date(Date.now() + (30 + Math.floor(Math.random() * 270)) * 24 * 60 * 60 * 1000);",
+                  "const minutos = 7 * 60 + Math.floor(Math.random() * 28) * 30;",
+                  "pm.collectionVariables.set('citaFecha', fecha.toISOString().slice(0, 10));",
+                  "pm.collectionVariables.set('citaHora', String(Math.floor(minutos / 60)).padStart(2, '0') + ':' + String(minutos % 60).padStart(2, '0'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const cita = pm.response.json();",
+                  "pm.test('queda programada', () => pm.expect(cita.estado).to.eql('programada'));",
+                  "pm.test('trae perro y veterinario', () => { pm.expect(cita.perro_nombre).to.be.a('string'); pm.expect(cita.veterinario_nombre).to.be.a('string'); });",
+                  "pm.collectionVariables.set('citaId', cita.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Otra cita a la misma fecha y hora → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/citas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "citas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"fecha\": \"{{citaFecha}}\",\n  \"hora\": \"{{citaHora}}\",\n  \"tipo\": \"consulta\",\n  \"motivo\": \"Cita repetida\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409: no hay dos citas a la misma hora (HU-11)', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cita con hora fuera de los bloques de 30 minutos → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/citas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "citas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"fecha\": \"{{citaFecha}}\",\n  \"hora\": \"09:15\",\n  \"tipo\": \"vacuna\",\n  \"motivo\": \"Refuerzo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('marca el campo hora', () => pm.expect(pm.response.json().detalles.map((d) => d.campo)).to.include('hora'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agenda del día de la cita",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/citas?desde={{citaFecha}}&hasta={{citaFecha}}",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "citas"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "{{citaFecha}}"
+                },
+                {
+                  "key": "hasta",
+                  "value": "{{citaFecha}}"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const agenda = pm.response.json();",
+                  "pm.test('incluye la cita agendada', () => pm.expect(agenda.citas.map((c) => c.id)).to.include(pm.collectionVariables.get('citaId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar la cita",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/citas/{{citaId}}",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "citas",
+                "{{citaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"perro_id\": {{perroId}},\n  \"veterinario_id\": {{veterinarioId}},\n  \"fecha\": \"{{citaFecha}}\",\n  \"hora\": \"{{citaHora}}\",\n  \"tipo\": \"consulta\",\n  \"motivo\": \"Control y vacuna\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('guarda el nuevo motivo', () => pm.expect(pm.response.json().motivo).to.eql('Control y vacuna'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atender una cita futura → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/citas/{{citaId}}/atender",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "citas",
+                "{{citaId}}",
+                "atender"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"diagnostico\": \"Sano\",\n  \"tratamiento\": \"Ninguno\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409: solo se atienden citas de hoy o anteriores', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar la cita",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{veterinariaUrl}}/citas/{{citaId}}/cancelar",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "citas",
+                "{{citaId}}",
+                "cancelar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo_cancelacion\": \"Cancelada desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('queda cancelada', () => pm.expect(pm.response.json().estado).to.eql('cancelada'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Agenda como responsable de adopciones → 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{veterinariaUrl}}/citas",
+              "host": [
+                "{{veterinariaUrl}}"
+              ],
+              "path": [
+                "citas"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403: solo administración y veterinaria (HU-11)', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1974,6 +2381,51 @@
           ]
         },
         {
+          "name": "Rechazar sin motivo → 400 (HU-13)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/estado",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"rechazada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "HU-13: el motivo del rechazo es obligatorio porque se le comunica al adoptante."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('el error es del motivo', () => pm.expect(pm.response.json().detalles[0].campo).to.eql('motivo_rechazo'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Aprobar",
           "request": {
             "method": "PATCH",
@@ -2011,7 +2463,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('responde 200', () => pm.response.to.have.status(200));",
-                  "pm.test('aprobada con fecha', () => { const a = pm.response.json(); pm.expect(a.estado).to.eql('aprobada'); pm.expect(a.fecha_aprobacion).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); });"
+                  "pm.test('aprobada con fecha', () => { const a = pm.response.json(); pm.expect(a.estado).to.eql('aprobada'); pm.expect(a.fecha_aprobacion).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); });",
+                  "pm.test('trae el aviso para el adoptante (HU-13)', () => pm.expect(pm.response.json().aviso.tipo).to.eql('aprobacion'));"
                 ]
               }
             }
@@ -2057,6 +2510,114 @@
                 "exec": [
                   "pm.test('responde 409', () => pm.response.to.have.status(409));",
                   "pm.test('trae el mensaje de error', () => pm.expect(pm.response.json().error).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mensaje sugerido para el adoptante (HU-13)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/avisos/borrador",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "avisos",
+                "borrador"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('aviso de aprobación con los siguientes pasos', () => { const a = pm.response.json(); pm.expect(a.tipo).to.eql('aprobacion'); pm.expect(a.mensaje).to.include('Siguientes pasos'); });",
+                  "pm.test('teléfono con 591 y enlace de wa.me', () => { const a = pm.response.json(); pm.expect(a.telefono).to.match(/^591\\d+$/); pm.expect(a.enlace_whatsapp).to.eql('https://wa.me/' + a.telefono + '?text=' + encodeURIComponent(a.mensaje)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar aviso al adoptante (HU-13)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/avisos",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "avisos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "HU-13: sin mensaje se registra el sugerido; con \"mensaje\", el texto ajustado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "pm.test('registra quién, cuándo y el texto', () => { const a = pm.response.json(); pm.expect(a.tipo).to.eql('aprobacion'); pm.expect(a.canal).to.eql('whatsapp'); pm.expect(a.enviado_por_nombre).to.be.a('string'); pm.expect(a.enviado_en).to.be.a('string'); pm.expect(a.mensaje).to.include('Siguientes pasos'); });",
+                  "pm.test('devuelve el enlace de WhatsApp', () => pm.expect(pm.response.json().enlace_whatsapp).to.match(/^https:\\/\\/wa\\.me\\/591\\d+\\?text=/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Avisos de la adopción (HU-13)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/avisos",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "avisos"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el aviso registrado', () => { const r = pm.response.json(); pm.expect(r.total).to.eql(1); pm.expect(r.avisos[0].tipo).to.eql('aprobacion'); });"
                 ]
               }
             }
@@ -2146,6 +2707,37 @@
                 "exec": [
                   "pm.test('responde 400', () => pm.response.to.have.status(400));",
                   "pm.test('detalle por campo: estado', () => pm.expect(pm.response.json().detalles.map(d => d.campo)).to.include.members(['estado']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aviso de una adopción finalizada → 409 (HU-13)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/adopciones/{{adopcionId}}/avisos/borrador",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "adopciones",
+                "{{adopcionId}}",
+                "avisos",
+                "borrador"
+              ]
+            },
+            "description": "HU-13: solo se avisa al aprobar o rechazar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));"
                 ]
               }
             }
@@ -2380,6 +2972,366 @@
               }
             }
           ]
+        },
+        {
+          "name": "Adopciones finalizadas sin historia (HU-14)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias/candidatas",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias",
+                "candidatas"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "HU-14: solo la administración gestiona las historias."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('la adopción finalizada todavía no tiene historia', () => pm.expect(pm.response.json().adopciones.map(a => a.solicitud_id)).to.include(pm.collectionVariables.get('adopcionId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar historia como responsable de adopciones → 403 (HU-14)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitud_id\": {{adopcionId}},\n  \"titulo\": \"Un nuevo hogar\",\n  \"relato\": \"Después de unas semanas en el albergue, ya duerme en su propia cama y sale a pasear todas las tardes.\",\n  \"foto_url\": \"https://images.dog.ceo/breeds/beagle/n02088364_11136.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publicar historia (HU-14)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitud_id\": {{adopcionId}},\n  \"titulo\": \"Un nuevo hogar\",\n  \"relato\": \"Después de unas semanas en el albergue, ya duerme en su propia cama y sale a pasear todas las tardes.\",\n  \"foto_url\": \"https://images.dog.ceo/breeds/beagle/n02088364_11136.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": "HU-14: título, relato y foto de una adopción finalizada. Sin fecha_publicacion se usa hoy."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 201', () => pm.response.to.have.status(201));",
+                  "const h = pm.response.json();",
+                  "pm.test('ligada a la adopción, con foto y visible', () => { pm.expect(h.solicitud_id).to.eql(pm.collectionVariables.get('adopcionId')); pm.expect(h.foto_url).to.match(/^https:/); pm.expect(h.visible).to.eql(true); pm.expect(h.publicado_por_nombre).to.be.a('string'); });",
+                  "pm.collectionVariables.set('historiaId', h.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Otra historia de la misma adopción → 409 (HU-14)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solicitud_id\": {{adopcionId}},\n  \"titulo\": \"Un nuevo hogar\",\n  \"relato\": \"Después de unas semanas en el albergue, ya duerme en su propia cama y sale a pasear todas las tardes.\",\n  \"foto_url\": \"https://images.dog.ceo/breeds/beagle/n02088364_11136.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historias en el catálogo público (sin sesión, HU-14)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "historias"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json().historias;",
+                  "pm.test('incluye la historia publicada', () => pm.expect(lista.map(h => h.id)).to.include(pm.collectionVariables.get('historiaId')));",
+                  "pm.test('de la más reciente a la más antigua', () => { const f = lista.map(h => h.fecha_publicacion); pm.expect(f).to.eql([...f].sort().reverse()); });",
+                  "pm.test('sin datos del adoptante', () => lista.forEach(h => pm.expect(h).to.not.have.property('adoptante_nombre')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ocultar la historia (HU-14)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias/{{historiaId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias",
+                "{{historiaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visible\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('queda oculta, no borrada', () => pm.expect(pm.response.json().visible).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La historia oculta no sale en el catálogo (HU-14)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{adopcionUrl}}/publico/historias",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "publico",
+                "historias"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ya no aparece', () => pm.expect(pm.response.json().historias.map(h => h.id)).to.not.include(pm.collectionVariables.get('historiaId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Volver a mostrar la historia (HU-14)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{adopcionUrl}}/historias/{{historiaId}}",
+              "host": [
+                "{{adopcionUrl}}"
+              ],
+              "path": [
+                "historias",
+                "{{historiaId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"visible\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "pm.test('vuelve a estar visible', () => pm.expect(pm.response.json().visible).to.eql(true));"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -2501,6 +3453,194 @@
                   "pm.test('responde 200', () => pm.response.to.have.status(200));",
                   "const m = pm.response.json().meses.map(x => x.mes);",
                   "pm.test('12 meses en orden', () => { pm.expect(m).to.have.length(12); pm.expect(m).to.eql([...m].sort()); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resumen de un año (HU-12)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/resumen?desde=2024-01-01&hasta=2024-12-31",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const { periodo } = pm.response.json();",
+                  "pm.test('devuelve el periodo pedido', () => { pm.expect(periodo.desde).to.eql('2024-01-01'); pm.expect(periodo.hasta).to.eql('2024-12-31'); });",
+                  "pm.test('trae los cuatro indicadores del periodo', () => ['ingresos', 'adopciones', 'solicitudes', 'atenciones'].forEach((c) => pm.expect(periodo[c]).to.be.a('number')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evolución del mes actual por día (HU-12)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/evolucion",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "evolucion"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const evolucion = pm.response.json();",
+                  "pm.test('va por día', () => pm.expect(evolucion.unidad).to.eql('dia'));",
+                  "pm.test('un punto por cada día del mes', () => pm.expect(evolucion.puntos.length).to.be.within(28, 31));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evolución de un año por mes (HU-12)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/evolucion?desde=2024-01-01&hasta=2024-12-31",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "evolucion"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 200', () => pm.response.to.have.status(200));",
+                  "const evolucion = pm.response.json();",
+                  "pm.test('va por mes', () => pm.expect(evolucion.unidad).to.eql('mes'));",
+                  "pm.test('12 meses', () => pm.expect(evolucion.puntos.map((p) => p.periodo)).to.have.lengthOf(12));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rango invertido → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{dashboardUrl}}/resumen?desde=2024-12-31&hasta=2024-01-01",
+              "host": [
+                "{{dashboardUrl}}"
+              ],
+              "path": [
+                "resumen"
+              ],
+              "query": [
+                {
+                  "key": "desde",
+                  "value": "2024-12-31"
+                },
+                {
+                  "key": "hasta",
+                  "value": "2024-01-01"
+                }
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('responde 400', () => pm.response.to.have.status(400));",
+                  "pm.test('marca la fecha final', () => pm.expect(pm.response.json().detalles[0].campo).to.eql('hasta'));"
                 ]
               }
             }
@@ -2654,6 +3794,22 @@
     },
     {
       "key": "seguimientoId",
+      "value": ""
+    },
+    {
+      "key": "historiaId",
+      "value": ""
+    },
+    {
+      "key": "citaId",
+      "value": ""
+    },
+    {
+      "key": "citaFecha",
+      "value": ""
+    },
+    {
+      "key": "citaHora",
       "value": ""
     }
   ]

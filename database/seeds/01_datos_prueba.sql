@@ -98,7 +98,8 @@ values (
 );
 update solicitudes_adopcion
    set estado = 'rechazada', fecha_rechazo = '2024-02-10',
-       observaciones = 'La vivienda no tiene espacio adecuado para un perro grande.'
+       observaciones = 'La vivienda no tiene espacio adecuado para un perro grande.',
+       motivo_rechazo = 'La vivienda no tiene espacio adecuado para un perro de su tamaño.'
  where perro_id = (select id from perros where nombre = 'Luna');
 
 -- Bella → Carlos: en_proceso (Bella queda en adopción)
@@ -187,4 +188,51 @@ from (values
 join solicitudes_adopcion s on s.perro_id = (select id from perros where nombre = 'Rocky') and s.estado = 'finalizada'
 cross join (select id from usuarios where correo = 'maria.alvarado@peluchin.test') u;
 
+-- -----------------------------------------------------------------------------
+-- Citas veterinarias (HU-11). Fechas relativas a hoy para que la agenda siempre
+-- tenga citas próximas; una está cancelada y libera su horario.
+-- -----------------------------------------------------------------------------
+insert into citas (perro_id, veterinario_id, fecha, hora, tipo, motivo, estado, motivo_cancelacion, registrado_por)
+select p.id, u.id, current_date + v.dias, v.hora::time, v.tipo, v.motivo, v.estado, v.cancelacion, u.id
+from (values
+  ('Max',   'andres.ramirez@peluchin.test', 1, '09:00', 'consulta', 'Control de la otitis y revisión del tratamiento', 'programada', null),
+  ('Nina',  'lucia.torres@peluchin.test',   1, '10:30', 'vacuna',   'Refuerzo de la vacuna séxtuple',                  'programada', null),
+  ('Coco',  'andres.ramirez@peluchin.test', 3, '08:30', 'cirugia',  'Esterilización',                                  'programada', null),
+  ('Luna',  'lucia.torres@peluchin.test',   6, '15:00', 'consulta', 'Revisión general antes de la adopción',           'programada', null),
+  ('Toby',  'andres.ramirez@peluchin.test', 2, '11:00', 'vacuna',   'Antirrábica anual',                               'cancelada',  'Se adelantó la vacuna en la consulta del lunes.')
+) as v(perro, veterinario, dias, hora, tipo, motivo, estado, cancelacion)
+join perros   p on p.nombre = v.perro
+join usuarios u on u.correo = v.veterinario;
+
 commit;
+
+-- -----------------------------------------------------------------------------
+-- Avisos al adoptante (HU-13). A Jorge se le avisó por WhatsApp del rechazo de su
+-- solicitud por Luna.
+-- -----------------------------------------------------------------------------
+insert into notificaciones (solicitud_id, tipo, telefono, mensaje, enviado_por, enviado_en)
+select s.id, 'rechazo', '591' || a.telefono,
+       'Hola, ' || a.nombre_completo || '. Le escribimos del albergue Huellas sobre su solicitud para adoptar a Luna. '
+       || 'Lamentamos informarle que esta vez no pudimos aprobarla. Motivo: ' || s.motivo_rechazo
+       || ' Gracias por querer darle un hogar a uno de nuestros perros; puede volver a postular cuando quiera.',
+       u.id, '2024-02-10 10:30:00-04'
+from solicitudes_adopcion s
+join adoptantes a on a.id = s.adoptante_id
+cross join (select id from usuarios where correo = 'maria.alvarado@peluchin.test') u
+where s.perro_id = (select id from perros where nombre = 'Luna') and s.estado = 'rechazada';
+
+-- -----------------------------------------------------------------------------
+-- Historias de adopciones exitosas (HU-14). La de Rocky, entregado el 2023-12-15,
+-- se muestra en el catálogo público (con su foto del albergue).
+-- -----------------------------------------------------------------------------
+insert into historias_adopcion (solicitud_id, titulo, relato, foto_url, fecha_publicacion, publicado_por)
+select s.id,
+       'Rocky encontró su patio para correr',
+       'Rocky llegó al albergue con miedo a la gente y pasaba los días en un rincón. Con paciencia aprendió a confiar, '
+       || 'y en diciembre se fue a vivir con Ana. Hoy duerme en su propia cama, corre todas las mañanas en el patio '
+       || 'y recibe a cada visita moviendo la cola. ¡Gracias, Ana, por darle una segunda oportunidad!',
+       p.foto_url, '2024-01-25', u.id
+from solicitudes_adopcion s
+join perros p on p.id = s.perro_id
+cross join (select id from usuarios where correo = 'admin@peluchin.test') u
+where p.nombre = 'Rocky' and s.estado = 'finalizada';

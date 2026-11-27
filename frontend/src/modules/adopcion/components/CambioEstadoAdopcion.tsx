@@ -38,11 +38,13 @@ interface Props {
 
 // HU-12 · Actualizar estado. Solo ofrece las transiciones que permite el backend;
 // en Rechazada y Finalizada no se muestra nada.
+// HU-13: al rechazar se pide el motivo, que va en el aviso al adoptante.
 export default function CambioEstadoAdopcion({ adopcion, onCambiado }: Props) {
   const permitidas = (adopcion.transiciones_permitidas ?? []).filter((t): t is Destino => t in ACCIONES)
   const [destino, setDestino] = useState<Destino | null>(null)
   const [fecha, setFecha] = useState(hoy())
   const [observaciones, setObservaciones] = useState('')
+  const [motivo, setMotivo] = useState('')
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
@@ -56,6 +58,7 @@ export default function CambioEstadoAdopcion({ adopcion, onCambiado }: Props) {
     setDestino(nuevo)
     setFecha(hoy())
     setObservaciones('')
+    setMotivo('')
     setErrores({})
     setError(null)
   }
@@ -63,8 +66,8 @@ export default function CambioEstadoAdopcion({ adopcion, onCambiado }: Props) {
   async function confirmar(e: FormEvent) {
     e.preventDefault()
     if (!destino) return
-    if (destino === 'rechazada' && !observaciones.trim()) {
-      setErrores({ observaciones: 'Indica el motivo del rechazo.' })
+    if (destino === 'rechazada' && !motivo.trim()) {
+      setErrores({ motivo_rechazo: 'Indica el motivo del rechazo.' })
       return
     }
     setGuardando(true)
@@ -74,6 +77,7 @@ export default function CambioEstadoAdopcion({ adopcion, onCambiado }: Props) {
         estado: destino,
         fecha,
         observaciones: observaciones.trim() || null,
+        motivo_rechazo: destino === 'rechazada' ? motivo.trim() : null,
       })
       onCambiado(actualizada, destino)
       setDestino(null)
@@ -127,7 +131,27 @@ export default function CambioEstadoAdopcion({ adopcion, onCambiado }: Props) {
               className={CLASE_INPUT}
             />
           </Campo>
-          <Campo etiqueta={destino === 'rechazada' ? 'Motivo del rechazo' : 'Observaciones'} obligatorio={destino === 'rechazada'} error={errores.observaciones}>
+          {destino === 'rechazada' && (
+            <Campo
+              etiqueta="Motivo del rechazo"
+              obligatorio
+              error={errores.motivo_rechazo}
+              ayuda="Se incluye en el mensaje que se le envía al adoptante."
+            >
+              <textarea
+                rows={2}
+                maxLength={500}
+                value={motivo}
+                onChange={(e) => {
+                  setMotivo(e.target.value)
+                  setErrores(({ motivo_rechazo: _, ...resto }) => resto)
+                }}
+                className={CLASE_TEXTAREA}
+                placeholder="¿Por qué no continúa la solicitud?"
+              />
+            </Campo>
+          )}
+          <Campo etiqueta={destino === 'rechazada' ? 'Observaciones internas' : 'Observaciones'} error={errores.observaciones}>
             <textarea
               rows={3}
               maxLength={2000}
@@ -137,7 +161,11 @@ export default function CambioEstadoAdopcion({ adopcion, onCambiado }: Props) {
                 setErrores(({ observaciones: _, ...resto }) => resto)
               }}
               className={CLASE_TEXTAREA}
-              placeholder={destino === 'rechazada' ? '¿Por qué no continúa la solicitud?' : 'Opcional. Se agrega a las observaciones del proceso.'}
+              placeholder={
+                destino === 'rechazada'
+                  ? 'Opcional. Solo las ve el equipo; no se envían al adoptante.'
+                  : 'Opcional. Se agrega a las observaciones del proceso.'
+              }
             />
           </Campo>
           <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end">

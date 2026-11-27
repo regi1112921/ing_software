@@ -14,8 +14,8 @@ export function crearConsultasRepository(pool) {
       return rows
     },
 
-    async obtener(id) {
-      const { rows } = await pool.query(
+    async obtener(id, cliente = pool) {
+      const { rows } = await cliente.query(
         `select c.id, c.perro_id, c.fecha, c.motivo, c.diagnostico, c.tratamiento, c.observaciones,
                 c.veterinario_id, u.nombre_completo as veterinario_nombre, c.creado_en
            from consultas c
@@ -26,8 +26,9 @@ export function crearConsultasRepository(pool) {
       return rows[0] ?? null
     },
 
-    async crear(consulta) {
-      const { rows } = await pool.query(
+    // cliente: para crearla dentro de una transacción (al atender una cita, HU-11).
+    async crear(consulta, cliente = pool) {
+      const { rows } = await cliente.query(
         `insert into consultas (perro_id, veterinario_id, fecha, motivo, diagnostico, tratamiento, observaciones)
          values ($1, $2, $3, $4, $5, $6, $7)
          returning id`,

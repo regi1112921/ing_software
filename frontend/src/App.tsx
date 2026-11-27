@@ -16,10 +16,14 @@ import AdopcionFormPage from '@/modules/adopcion/pages/AdopcionFormPage'
 import AdopcionDetallePage from '@/modules/adopcion/pages/AdopcionDetallePage'
 import SolicitudesWebPage from '@/modules/adopcion/pages/SolicitudesWebPage'
 import SeguimientosPage from '@/modules/adopcion/pages/SeguimientosPage'
+import HistoriasPage from '@/modules/adopcion/pages/HistoriasPage'
 import HistorialMedico from '@/modules/veterinaria/components/HistorialMedico'
 import AtencionFormPage from '@/modules/veterinaria/pages/AtencionFormPage'
 import ControlesPendientesPage from '@/modules/veterinaria/pages/ControlesPendientesPage'
 import ControlFormPage from '@/modules/veterinaria/pages/ControlFormPage'
+import AgendaPage from '@/modules/veterinaria/pages/AgendaPage'
+import CitaFormPage from '@/modules/veterinaria/pages/CitaFormPage'
+import AtenderCitaPage from '@/modules/veterinaria/pages/AtenderCitaPage'
 
 export default function App() {
   return (
@@ -56,6 +60,14 @@ export default function App() {
                 <Route path="perros/:id/controles/nuevo" element={<ControlFormPage />} />
               </Route>
 
+              {/* HU-11 (sprint 2): agenda de citas veterinarias. */}
+              <Route element={<RutaPorRol permiso="citas" redirigirA="/perros" />}>
+                <Route path="agenda" element={<AgendaPage />} />
+                <Route path="agenda/nueva" element={<CitaFormPage />} />
+                <Route path="agenda/:id/editar" element={<CitaFormPage />} />
+                <Route path="agenda/:id/atender" element={<AtenderCitaPage />} />
+              </Route>
+
               {/* HU-07: Adopciones es de administración y de responsables de adopciones. */}
               <Route element={<RutaPorRol permiso="adopciones" redirigirA="/perros" />}>
                 <Route path="adopciones" element={<AdopcionesPage />} />
@@ -64,6 +76,11 @@ export default function App() {
                 <Route path="solicitudes-web" element={<SolicitudesWebPage />} />
                 {/* HU-10 (sprint 2): seguimiento después de la adopción. */}
                 <Route path="seguimientos" element={<SeguimientosPage />} />
+              </Route>
+
+              {/* HU-14: historias de adopciones exitosas (solo la administración). */}
+              <Route element={<RutaPorRol permiso="historias" redirigirA="/perros" />}>
+                <Route path="historias" element={<HistoriasPage />} />
               </Route>
 
               <Route path="*" element={<NoEncontradoPage />} />
